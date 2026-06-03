@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+
+# Veritabanı
+*.db
+*.sqlite
+*.sqlite3
+
+# Ortam değişkenleri (gizli)
+.env
+
+# CSV veri dosyaları (gizli müşteri verisi — repoya girmesin)
+data/*.csv
+data/uploads/
+
+# Node / frontend
+node_modules/
+dist/
+.vite/
+
+# Editör / işletim sistemi
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
