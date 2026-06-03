@@ -160,6 +160,63 @@ body {
   padding-top: 8px;
 }
 
+/* Form alanları (CRM düzenleme modalı) */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12.5px;
+}
+.field.full {
+  grid-column: 1 / -1;
+}
+.field label {
+  color: var(--muted);
+  font-weight: 500;
+}
+.field input,
+.field select,
+.field textarea {
+  padding: 7px 9px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  font-size: 13px;
+  font-family: inherit;
+}
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.field.check {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Kupon durum renkleri */
+.cs-expired { background: #fee2e2; color: #b91c1c; }
+.cs-expiring { background: #ffedd5; color: #c2410c; }
+.cs-active { background: #dcfce7; color: #15803d; }
+
+/* KPI uyarı kartları (tıklanabilir) */
+.kpi-alert {
+  cursor: pointer;
+  border-left: 4px solid var(--border);
+}
+.kpi-alert:hover {
+  background: var(--accent-soft);
+}
+.kpi-alert.active {
+  outline: 2px solid var(--accent);
+}
+
 /* Sekmeler */
 .tabs {
   display: flex;

@@ -14,8 +14,10 @@ env/
 # Ortam değişkenleri (gizli)
 .env
 
-# CSV veri dosyaları (gizli müşteri verisi — repoya girmesin)
+# Veri dosyaları (gizli müşteri verisi — repoya girmesin)
 data/*.csv
+data/*.xlsx
+data/*.xls
 data/uploads/
 
 # Node / frontend

@@ -10,6 +10,17 @@ export async function apiGet(path) {
   return res.json();
 }
 
+// Bir kaydı kısmi günceller (PATCH, JSON).
+export async function apiPatch(path, body) {
+  const res = await fetch(`${BASE}${path}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`Güncelleme başarısız (${res.status})`);
+  return res.json();
+}
+
 // CSV dosya(ları) yükler (multipart/form-data).
 export async function apiUpload(path, files) {
   const fd = new FormData();

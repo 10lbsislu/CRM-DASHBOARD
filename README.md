@@ -89,6 +89,17 @@ Frontend build edilip backend tarafından tek port (8000) üzerinden servis edil
   - `python -m app.ingestion.run --replace` → tüm veriyi sıfırlayıp baştan yükler
 - Her yüklemede mükerrer müşteriler (e-posta/telefon/ad) otomatik birleşir; yeni müşteriler tanınır.
 
+## CRM / Kampanya Modülü
+Müşteri arama, kupon ve kampanya takibinin panelden yönetildiği yazılabilir katman.
+- **CRM sekmesi:** durum, kampanya, arandı/aranacak, kupon kodu/gönderim/bitiş, not — panelden düzenlenir, kalıcıdır (CSV yüklemesinden ayrı saklanır).
+- **Otomatik:** kampanya uygunluğu (5+ sipariş→Sadakat, 90+ gün→Nerdesin/25K+%5, yeni→Hoşgeldin), kupon süre durumu (dolmuş/yaklaşan), aranacaklar.
+- **Kampanya ROI:** siparişlerdeki indirim toplamından aylık etki.
+- **Mevcut Excel CRM'i içeri aktarma** (bir kez):
+  ```powershell
+  cd backend
+  .\.venv\Scripts\python.exe -m app.ingestion.import_crm_excel "../data/GÜNCEL CRM TABLOSU.xlsx"
+  ```
+
 ## API Endpoint'leri
 | Bölüm | Endpoint |
 |-------|----------|
