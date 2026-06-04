@@ -137,9 +137,9 @@ function TypeBreakdown({ sum }) {
   ];
   return (
     <Card title="Sipariş Tipi Dağılımı">
-      <ResponsiveContainer width="100%" height={260}>
-        <PieChart>
-          <Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={95} label={(e) => e.value}>
+      <ResponsiveContainer width="100%" height={320}>
+        <PieChart margin={{ top: 24, bottom: 8, left: 8, right: 8 }}>
+          <Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="48%" outerRadius={88} label={(e) => e.value}>
             {data.map((d, i) => <Cell key={i} fill={d.color} />)}
           </Pie>
           <Tooltip /><Legend />
@@ -154,7 +154,7 @@ function Trend() {
   return (
     <Card title="Karışık Sipariş & Ekstra Maliyet (aylık)">
       <AsyncState loading={loading} error={error} data={data}>
-        <ResponsiveContainer width="100%" height={260}>
+        <ResponsiveContainer width="100%" height={300}>
           <BarChart data={data || []} margin={{ left: 10, right: 10 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
             <XAxis dataKey="period" fontSize={11} />
