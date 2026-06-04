@@ -4,13 +4,37 @@ Donuk ve soğuk ürünler ayrı kargoyla gönderildiği için, hem donuk hem so�
 içeren ("karışık") siparişler ikinci bir gönderi maliyeti doğurur.
 """
 from collections import Counter, defaultdict
+from datetime import datetime
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.analytics.logistics import classify_category
-from app.models import Customer, Order, OrderItem
+from app.models import Customer, LogisticsConfig, Order, OrderItem
 from app.services.constants import EXCLUDED_STATUSES, SHIPPING_DONUK_TL
+
+
+def _configs(db: Session) -> dict[str, LogisticsConfig]:
+    return {c.month: c for c in db.execute(select(LogisticsConfig)).scalars()}
+
+
+def _expected_shipping(cfg: LogisticsConfig | None, total: float) -> float | None:
+    """Aya özel kurala göre müşteriden ALINMASI GEREKEN kargo. Kural yoksa None."""
+    if cfg is None or cfg.low_threshold is None or cfg.free_threshold is None:
+        return None
+    if total >= cfg.free_threshold:
+        return 0.0
+    if total < cfg.low_threshold:
+        return cfg.low_fee or 0.0
+    return cfg.mid_fee or 0.0
+
+
+def config_dict(c: LogisticsConfig) -> dict:
+    return {
+        "month": c.month, "shipping_cost": c.shipping_cost,
+        "low_threshold": c.low_threshold, "low_fee": c.low_fee,
+        "mid_fee": c.mid_fee, "free_threshold": c.free_threshold,
+    }
 
 _NET = Order.status.notin_(EXCLUDED_STATUSES)
 _PERIOD_FMT = {"day": "%Y-%m-%d", "week": "%Y-%W", "month": "%Y-%m"}
@@ -64,16 +88,34 @@ def summary(db: Session, start: str | None = None, end: str | None = None) -> di
     mixed_revenue = sum(o["total"] for o in mixed)
     total_revenue = sum(o["total"] for o in orders)
 
-    # Kargo ekonomisi
-    # Gönderi sayısı: karışık = 2 gönderi, tek tip = 1 gönderi
+    # Kargo ekonomisi — aya özel config (varsa) ile hesaplanır
+    cfgs = _configs(db)
     shipments = len(single) + 2 * len(mixed)
-    our_cost = shipments * SHIPPING_DONUK_TL                 # tahmini kargo giderimiz
-    collected = sum(o["shipping"] for o in orders)           # müşteriden alınan kargo
-    net_cost = our_cost - collected                          # net kargo yükü (bize kalan)
-    extra = len(mixed) * SHIPPING_DONUK_TL                   # karışıktan doğan ekstra gönderi
+    our_cost = 0.0
+    collected = 0.0
+    extra = 0.0           # karışıktan doğan ekstra (ikinci) gönderi maliyeti
+    rule_based = False    # en az bir siparişte kademeli kural uygulandı mı
+    for o in orders:
+        month = o["date"].strftime("%Y-%m") if o["date"] else None
+        cfg = cfgs.get(month)
+        cost_per = cfg.shipping_cost if cfg else SHIPPING_DONUK_TL
+        is_mixed = o["type"] == "mixed"
+        our_cost += (2 if is_mixed else 1) * cost_per
+        if is_mixed:
+            extra += cost_per
+        exp = _expected_shipping(cfg, o["total"])
+        if exp is not None:
+            rule_based = True
+            cs = exp
+        else:
+            cs = o["shipping"] or 0
+        o["_cust_ship"] = cs
+        collected += cs
+
+    net_cost = our_cost - collected
 
     def _avg_ship(group):
-        return round(sum(o["shipping"] for o in group) / len(group), 0) if group else 0
+        return round(sum(o["_cust_ship"] for o in group) / len(group), 0) if group else 0
 
     # Karışık siparişlerde en sık görünen ürünler (kategoriye göre "sebepler")
     donuk_c: Counter = Counter()
@@ -91,7 +133,8 @@ def summary(db: Session, start: str | None = None, end: str | None = None) -> di
         "mixed": len(mixed),
         "mixed_pct": round(len(mixed) * 100 / len(orders), 1) if orders else 0,
         "extra_shipping_cost": round(extra, 2),
-        "shipping_per_order": SHIPPING_DONUK_TL,
+        "shipping_per_order": round(our_cost / shipments) if shipments else SHIPPING_DONUK_TL,
+        "rule_based_shipping": rule_based,
         "mixed_revenue": round(mixed_revenue, 2),
         "mixed_revenue_pct": round(mixed_revenue * 100 / total_revenue, 1) if total_revenue else 0,
         "total_revenue": round(total_revenue, 2),
@@ -127,6 +170,77 @@ def mixed_orders(db: Session, start: str | None = None, end: str | None = None) 
         }
         for o in rows
     ]
+
+
+def list_configs(db: Session) -> dict:
+    """Tüm aylar için kayıtlı lojistik ayarları (ay -> config)."""
+    return {c.month: config_dict(c) for c in db.execute(select(LogisticsConfig)).scalars()}
+
+
+def _validate(data: dict) -> tuple[list[str], list[str]]:
+    """Döner: (hard_errors, warnings). Hard error varsa kayıt engellenir."""
+    errors, warns = [], []
+    sc = data.get("shipping_cost")
+    lt, lf = data.get("low_threshold"), data.get("low_fee")
+    mf, ft = data.get("mid_fee"), data.get("free_threshold")
+    if sc is None or sc < 0:
+        errors.append("Gönderi maliyeti (bizim kargo) 0 veya pozitif olmalı.")
+    for name, v in [("Alt eşik", lt), ("Alt ücret", lf), ("Orta ücret", mf), ("Ücretsiz eşiği", ft)]:
+        if v is not None and v < 0:
+            errors.append(f"{name} negatif olamaz.")
+    if lt is not None and ft is not None and lt >= ft:
+        errors.append("Alt eşik, ücretsiz eşiğinden küçük olmalı (örn. 5000 < 20000).")
+    if lf is not None and mf is not None and mf > lf:
+        warns.append("Orta ücret alt ücretten yüksek — genelde tersi beklenir.")
+    return errors, warns
+
+
+def _consistency_warning(db: Session, month: str, data: dict) -> str | None:
+    """O ayki gerçek kargo bedelleri girilen kurala uyuyor mu? Uymayanları say."""
+    class _C:  # geçici config benzeri
+        low_threshold = data.get("low_threshold")
+        free_threshold = data.get("free_threshold")
+        low_fee = data.get("low_fee")
+        mid_fee = data.get("mid_fee")
+    rows = db.execute(
+        select(Order.total, Order.shipping_price)
+        .where(_NET).where(func.strftime("%Y-%m", Order.order_date) == month)
+        .where(Order.total.isnot(None))
+    ).all()
+    mismatch = 0
+    for total, ship in rows:
+        exp = _expected_shipping(_C, total or 0)
+        if exp is None:
+            return None
+        if abs((ship or 0) - exp) > 1:
+            mismatch += 1
+    if mismatch:
+        return (f"{mismatch}/{len(rows)} siparişte gerçekte alınan kargo, girilen kurala "
+                f"uymuyor (geçmiş siparişler eski kuralla alınmış olabilir).")
+    return None
+
+
+def save_config(db: Session, month: str, data: dict) -> dict:
+    """Aya özel lojistik ayarını kaydeder (doğrulama + tutarlılık uyarısı)."""
+    errors, warns = _validate(data)
+    if errors:
+        return {"ok": False, "errors": errors, "warnings": warns}
+    cw = _consistency_warning(db, month, data)
+    if cw:
+        warns.append(cw)
+
+    cfg = db.get(LogisticsConfig, month)
+    if cfg is None:
+        cfg = LogisticsConfig(month=month)
+        db.add(cfg)
+    cfg.shipping_cost = data["shipping_cost"]
+    cfg.low_threshold = data.get("low_threshold")
+    cfg.low_fee = data.get("low_fee")
+    cfg.mid_fee = data.get("mid_fee")
+    cfg.free_threshold = data.get("free_threshold")
+    cfg.updated_at = datetime.now()
+    db.commit()
+    return {"ok": True, "errors": [], "warnings": warns, "config": config_dict(cfg)}
 
 
 def trend(db: Session, period: str = "month") -> list[dict]:

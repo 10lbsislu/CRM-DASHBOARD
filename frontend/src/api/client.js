@@ -21,6 +21,17 @@ export async function apiPatch(path, body) {
   return res.json();
 }
 
+// Bir kaynağı tümüyle gönderir/oluşturur (PUT, JSON).
+export async function apiPut(path, body) {
+  const res = await fetch(`${BASE}${path}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`Kaydetme başarısız (${res.status})`);
+  return res.json();
+}
+
 // CSV dosya(ları) yükler (multipart/form-data).
 export async function apiUpload(path, files) {
   const fd = new FormData();
