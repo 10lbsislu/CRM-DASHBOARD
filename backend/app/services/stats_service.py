@@ -5,7 +5,7 @@ Tüm fonksiyonlar opsiyonel tarih aralığı (start dahil, end hariç) alır.
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.models import Order, OrderItem
+from app.models import Customer, Order, OrderItem
 from app.services.constants import EXCLUDED_STATUSES
 
 # Net ciroya dahil siparişleri seçen ortak filtre
@@ -88,6 +88,30 @@ def top_products(db: Session, limit: int = 10, by: str = "quantity",
         {
             "product_name": r.product_name,
             "quantity": int(r.quantity),
+            "revenue": round(r.revenue, 2),
+        }
+        for r in db.execute(q).all()
+    ]
+
+
+def top_customers(db: Session, limit: int = 10,
+                  start: str | None = None, end: str | None = None) -> list[dict]:
+    """En sık sipariş veren müşteriler — sipariş sayısına göre."""
+    orders = func.count().label("orders")
+    revenue = func.coalesce(func.sum(Order.total), 0).label("revenue")
+    q = (
+        select(Order.customer_id, Customer.full_name, orders, revenue)
+        .outerjoin(Customer, Order.customer_id == Customer.id)
+        .where(_NET, *_date_conds(start, end))
+        .where(Order.customer_id.isnot(None))
+        .group_by(Order.customer_id)
+        .order_by(orders.desc(), revenue.desc())
+        .limit(limit)
+    )
+    return [
+        {
+            "name": r.full_name or r.customer_id,
+            "orders": r.orders,
             "revenue": round(r.revenue, 2),
         }
         for r in db.execute(q).all()

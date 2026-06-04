@@ -92,22 +92,52 @@ function Summary({ start, end }) {
   );
 }
 
-function TopProducts({ start, end }) {
+function TopProducts({ start, end, by }) {
   const { data, error, loading } = useApi(
-    withParams("/api/stats/top-products", { limit: 8, by: "revenue", start, end })
+    withParams("/api/stats/top-products", { limit: 8, by, start, end })
   );
+  const isRev = by === "revenue";
   return (
-    <Card title="En Çok Satan Ürünler (Ciro)">
+    <Card title={`En Çok Satan Ürünler (${isRev ? "Ciro" : "Adet"})`}>
       <AsyncState loading={loading} error={error} data={data}>
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={data || []} layout="vertical" margin={{ left: 20, right: 20 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
             <XAxis type="number" fontSize={11} tickFormatter={fmtNum} />
             <YAxis type="category" dataKey="product_name" width={150} fontSize={10} />
-            <Tooltip formatter={(v) => fmtMoney(v)} />
-            <Bar dataKey="revenue" name="Ciro" fill="#2563eb" radius={[0, 4, 4, 0]} />
+            <Tooltip formatter={(v) => (isRev ? fmtMoney(v) : `${fmtNum(v)} adet`)} />
+            <Bar dataKey={isRev ? "revenue" : "quantity"} name={isRev ? "Ciro" : "Adet"}
+              fill={isRev ? "#2563eb" : "#0891b2"} radius={[0, 4, 4, 0]} />
           </BarChart>
         </ResponsiveContainer>
+      </AsyncState>
+    </Card>
+  );
+}
+
+function TopCustomers({ start, end }) {
+  const { data, error, loading } = useApi(
+    withParams("/api/stats/top-customers", { limit: 10, start, end })
+  );
+  return (
+    <Card title="En Sık Sipariş Veren Müşteriler">
+      <AsyncState loading={loading} error={error} data={data}>
+        <div style={{ maxHeight: 300, overflowY: "auto" }}>
+          <table>
+            <thead>
+              <tr><th>Müşteri</th><th className="num">Sipariş</th><th className="num">Ciro</th></tr>
+            </thead>
+            <tbody>
+              {(data || []).map((c, i) => (
+                <tr key={i}>
+                  <td>{c.name}</td>
+                  <td className="num">{c.orders}</td>
+                  <td className="num">{fmtMoney(c.revenue)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </AsyncState>
     </Card>
   );
@@ -160,8 +190,12 @@ export default function StatsSection() {
         <>
           <Summary start={range.start} end={range.end} />
           <div className="grid grid-2" style={{ marginTop: 16 }}>
-            <TopProducts start={range.start} end={range.end} />
+            <TopProducts start={range.start} end={range.end} by="revenue" />
+            <TopProducts start={range.start} end={range.end} by="quantity" />
+          </div>
+          <div className="grid grid-2" style={{ marginTop: 16 }}>
             <ByCity start={range.start} end={range.end} />
+            <TopCustomers start={range.start} end={range.end} />
           </div>
         </>
       )}

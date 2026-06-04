@@ -39,6 +39,16 @@ def top_products(
     return stats_service.top_products(db, limit=limit, by=by, start=start, end=end)
 
 
+@router.get("/top-customers")
+def top_customers(
+    limit: int = Query(10, ge=1, le=50),
+    start: str | None = Query(None, pattern=_DATE),
+    end: str | None = Query(None, pattern=_DATE),
+    db: Session = Depends(get_db),
+):
+    return stats_service.top_customers(db, limit=limit, start=start, end=end)
+
+
 @router.get("/by-city")
 def by_city(
     limit: int = Query(15, ge=1, le=100),
