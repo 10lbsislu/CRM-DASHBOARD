@@ -116,7 +116,26 @@ class CsvDataSource(DataSource):
         self._build_items(df, data)
         self._build_products(df, data)
         self._build_customers(df, data)
+        self._drop_test_accounts(data)
         return data
+
+    def _drop_test_accounts(self, data: NormalizedData) -> None:
+        """Test/iç hesapların siparişlerini, kalemlerini ve müşterilerini atar."""
+        from app.services.constants import TEST_CUSTOMER_EMAILS
+
+        def is_test(email: str | None) -> bool:
+            return bool(email) and email.strip().lower() in TEST_CUSTOMER_EMAILS
+
+        test_orders = {
+            o["order_number"] for o in data.orders if is_test(o.get("customer_email"))
+        }
+        if not test_orders:
+            return
+        data.orders = [o for o in data.orders if o["order_number"] not in test_orders]
+        data.order_items = [
+            it for it in data.order_items if it["order_number"] not in test_orders
+        ]
+        data.customers = [c for c in data.customers if not is_test(c.get("email"))]
 
     # --- Siparişler: grup başına ilk dolu değer ---
     def _build_orders(self, df: pd.DataFrame, data: NormalizedData) -> None:

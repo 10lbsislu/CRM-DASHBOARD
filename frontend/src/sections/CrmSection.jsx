@@ -161,7 +161,7 @@ function GapsReport({ reload, onEdit }) {
                 <thead>
                   <tr>
                     <th>Müşteri</th><th>Uygun Kampanya</th>
-                    <th className="num">Sipariş</th><th className="num">Son Sipariş</th>
+                    <th className="num">Sipariş</th><th>Son Sipariş</th>
                     <th className="num">Harcama</th><th>Arandı</th>
                   </tr>
                 </thead>
@@ -171,7 +171,7 @@ function GapsReport({ reload, onEdit }) {
                       <td title={r.email}>{r.name}</td>
                       <td style={{ fontSize: 11 }}>{r.eligibility.join(", ")}</td>
                       <td className="num">{r.orders}</td>
-                      <td className="num">{r.recency_days != null ? `${r.recency_days}g` : "-"}</td>
+                      <td>{fmtDate(r.last_order)}{r.recency_days != null ? ` (${r.recency_days}g)` : ""}</td>
                       <td className="num">{fmtMoney(r.monetary)}</td>
                       <td>{r.called ? "✓" : "—"}</td>
                     </tr>

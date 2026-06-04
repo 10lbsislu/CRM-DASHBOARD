@@ -15,6 +15,15 @@ WELCOME_CAMPAIGN_START = "2026-03-01"
 # Market-basket: bir ürün çiftinin rapora girmesi için min birlikte görülme sayısı
 DEFAULT_MIN_PAIR_COUNT = 2
 
+# --- Test/iç hesaplar (hiçbir analize girmez — yüklemede tamamen atılır) ---
+TEST_CUSTOMER_EMAILS = {
+    "adasdmin@gmail.com",       # asd asd
+    "huseyinyucel@pakyurek.com",  # hüseyin yücel (iç hesap)
+    "hyucelbilisim@gmail.com",    # hüseyin yücel (ikinci e-posta)
+    "deneme@gmail.com",          # deneme deneme
+}
+
+
 # --- Lojistik / kargo ---
 # Donuk ürünler ayrı (soğuk zincir) kargoyla gider. Karışık siparişlerde
 # (hem donuk hem soğuk) ikinci bir gönderi gerektiği için bu ekstra maliyet doğar.
