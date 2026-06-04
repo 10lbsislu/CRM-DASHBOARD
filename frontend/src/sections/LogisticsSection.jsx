@@ -152,6 +152,7 @@ function TierBreakdown({ sum }) {
           <tr>
             <th>Kademe</th>
             <th className="num">Sipariş</th>
+            <th className="num">Ciro</th>
             <th className="num">Bizim Gider</th>
             <th className="num">Alınan</th>
             <th className="num">Net</th>
@@ -167,6 +168,7 @@ function TierBreakdown({ sum }) {
                 {t.label}
               </td>
               <td className="num">{t.orders}</td>
+              <td className="num">{fmtMoney(t.revenue)}</td>
               <td className="num">{fmtMoney(t.our_cost)}</td>
               <td className="num">{fmtMoney(t.collected)}</td>
               <td className="num"><b>{fmtMoney(t.net)}</b></td>

@@ -95,7 +95,7 @@ def summary(db: Session, start: str | None = None, end: str | None = None) -> di
     collected = 0.0
     extra = 0.0           # karışıktan doğan ekstra (ikinci) gönderi maliyeti
     rule_based = False    # en az bir siparişte kademeli kural uygulandı mı
-    tiers = {k: {"orders": 0, "our_cost": 0.0, "collected": 0.0}
+    tiers = {k: {"orders": 0, "our_cost": 0.0, "collected": 0.0, "revenue": 0.0}
              for k in ("free", "mid", "low", "none")}
     for o in orders:
         month = o["date"].strftime("%Y-%m") if o["date"] else None
@@ -129,6 +129,7 @@ def summary(db: Session, start: str | None = None, end: str | None = None) -> di
         tb["orders"] += 1
         tb["our_cost"] += order_cost
         tb["collected"] += cs
+        tb["revenue"] += o["total"] or 0
 
     net_cost = our_cost - collected
 
@@ -139,6 +140,7 @@ def summary(db: Session, start: str | None = None, end: str | None = None) -> di
     tier_breakdown = [
         {
             "key": k, "label": _tier_labels[k], "orders": tiers[k]["orders"],
+            "revenue": round(tiers[k]["revenue"], 2),
             "our_cost": round(tiers[k]["our_cost"], 2),
             "collected": round(tiers[k]["collected"], 2),
             "net": round(tiers[k]["our_cost"] - tiers[k]["collected"], 2),
