@@ -50,6 +50,11 @@ def summary(db: Session = Depends(get_db)):
     return crm_service.summary(db)
 
 
+@router.get("/gaps")
+def gaps(campaign: str | None = None, db: Session = Depends(get_db)):
+    return crm_service.coupon_gaps(db, campaign=campaign)
+
+
 @router.get("/campaign-roi")
 def campaign_roi(
     period: str = Query("month", pattern="^(day|week|month)$"),

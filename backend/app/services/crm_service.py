@@ -222,6 +222,44 @@ def summary(db: Session) -> dict:
     }
 
 
+def coupon_gaps(db: Session, campaign: str | None = None) -> dict:
+    """Tutarsızlık raporu: bir kampanyaya UYGUN olduğu hâlde kuponu olmayan müşteriler.
+
+    Akış kuralı: ilk siparişini veren müşteriye Hoşgeldin kuponu, 5+ siparişe
+    Sadakat, 90+ gün inaktife Nerdesin kuponu tanımlanmalı. Burada bu kupon
+    tanımlanmamış (gönderilmemiş ve kodu olmayan) uygun müşteriler listelenir.
+    """
+    def has_coupon(r):
+        return bool(r["coupon_sent"] or r["coupon_code"])
+
+    rows = list_customers(db)
+    gaps = [r for r in rows if r["eligibility"] and not has_coupon(r)]
+
+    by_campaign: dict[str, int] = {}
+    for r in gaps:
+        for e in r["eligibility"]:
+            by_campaign[e] = by_campaign.get(e, 0) + 1
+
+    if campaign:
+        gaps = [r for r in gaps if campaign in r["eligibility"]]
+
+    keep = ("customer_id", "name", "email", "phone", "orders", "monetary",
+            "recency_days", "last_order", "eligibility", "campaign_type",
+            "coupon_sent", "coupon_code", "called", "to_call",
+            "status", "last_call_date", "coupon_sent_date",
+            "coupon_expiry_date", "note")
+    customers = [{k: r[k] for k in keep} for r in gaps]
+    customers.sort(key=lambda r: r["monetary"], reverse=True)
+
+    return {
+        "total_without_coupon": sum(1 for r in rows if not has_coupon(r)),
+        "gap_count": len(customers),
+        "by_campaign": [{"campaign": k, "count": v}
+                        for k, v in sorted(by_campaign.items(), key=lambda x: -x[1])],
+        "customers": customers,
+    }
+
+
 def campaign_roi(db: Session, period: str = "month") -> list[dict]:
     """Kampanya indirimi etkisi — siparişlerdeki Kampanya Toplamı'ndan."""
     fmt = _PERIOD_FMT.get(period, _PERIOD_FMT["month"])

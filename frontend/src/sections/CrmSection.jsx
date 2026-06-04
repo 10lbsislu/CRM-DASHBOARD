@@ -126,6 +126,67 @@ function Roi() {
   );
 }
 
+function GapsReport({ reload, onEdit }) {
+  const [camp, setCamp] = useState("");
+  const qs = new URLSearchParams();
+  if (camp) qs.append("campaign", camp);
+  qs.append("_r", reload);
+  const { data, error, loading } = useApi(`/api/crm/gaps?${qs}`);
+
+  return (
+    <Card title="⚠ Eksik Kupon — Aksiyon Gerekenler">
+      <p className="section-desc" style={{ margin: "0 0 10px" }}>
+        Bir kampanyaya <b>uygun olduğu hâlde kuponu tanımlanmamış</b> müşteriler.
+        Akış kuralı: ilk sipariş → Hoşgeldin, 5+ sipariş → Sadakat, 90+ gün → Nerdesin
+        kuponu olmalı. Tutarsızlık bırakmamak için bu listeyi kapat.
+      </p>
+      <AsyncState loading={loading} error={error} data={data}>
+        {data && (
+          <>
+            <div style={{ marginBottom: 12, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+              <span className="badge" style={{ background: "#fee2e2", color: "#b91c1c" }}>
+                {data.gap_count} kayıt
+              </span>
+              <button className="badge" style={{ cursor: "pointer", border: "none",
+                background: camp === "" ? "var(--accent)" : "var(--accent-soft)", color: camp === "" ? "#fff" : "var(--accent)" }}
+                onClick={() => setCamp("")}>Tümü</button>
+              {(data.by_campaign || []).map((c) => (
+                <button key={c.campaign} className="badge" style={{ cursor: "pointer", border: "none",
+                  background: camp === c.campaign ? "var(--accent)" : "var(--accent-soft)", color: camp === c.campaign ? "#fff" : "var(--accent)" }}
+                  onClick={() => setCamp(c.campaign)}>{c.campaign} ({c.count})</button>
+              ))}
+            </div>
+            <div style={{ maxHeight: 420, overflowY: "auto" }}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Müşteri</th><th>Uygun Kampanya</th>
+                    <th className="num">Sipariş</th><th className="num">Son Sipariş</th>
+                    <th className="num">Harcama</th><th>Arandı</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.customers.map((r) => (
+                    <tr key={r.customer_id} className="clickable-row" onClick={() => onEdit(r)}>
+                      <td title={r.email}>{r.name}</td>
+                      <td style={{ fontSize: 11 }}>{r.eligibility.join(", ")}</td>
+                      <td className="num">{r.orders}</td>
+                      <td className="num">{r.recency_days != null ? `${r.recency_days}g` : "-"}</td>
+                      <td className="num">{fmtMoney(r.monetary)}</td>
+                      <td>{r.called ? "✓" : "—"}</td>
+                    </tr>
+                  ))}
+                  {!data.customers.length && <tr><td colSpan={6} className="state">Eksik kupon yok 🎉</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+      </AsyncState>
+    </Card>
+  );
+}
+
 export default function CrmSection() {
   const [reload, setReload] = useState(0);
   const [editing, setEditing] = useState(null);
@@ -185,23 +246,26 @@ export default function CrmSection() {
         </div>
       </div>
 
+      <div style={{ marginTop: 16 }}>
+        <GapsReport reload={reload} onEdit={setEditing} />
+      </div>
+
       <div className="grid grid-2" style={{ marginTop: 16 }}>
         <Roi />
         <Card title="Kampanya Dağılımı (atanmış)">
+          <p className="section-desc" style={{ margin: "0 0 10px" }}>
+            Müşterilere atanmış kampanya türlerinin dağılımı.
+          </p>
           <AsyncState loading={!sum} error={null} data={sum?.campaign_distribution}>
             <table>
-              <thead><tr><th>Kampanya</th><th className="num">Müşteri</th><th className="num">Uygun (otomatik)</th></tr></thead>
+              <thead><tr><th>Kampanya</th><th className="num">Müşteri</th></tr></thead>
               <tbody>
-                {(sum?.campaign_distribution || []).map((c) => {
-                  const elig = (sum?.eligibility || []).find((e) => c.campaign.startsWith(e.campaign.split(" ")[0]));
-                  return (
-                    <tr key={c.campaign}>
-                      <td>{c.campaign}</td>
-                      <td className="num">{c.count}</td>
-                      <td className="num">{elig ? elig.count : "-"}</td>
-                    </tr>
-                  );
-                })}
+                {(sum?.campaign_distribution || []).map((c) => (
+                  <tr key={c.campaign}>
+                    <td>{c.campaign}</td>
+                    <td className="num">{c.count}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </AsyncState>
