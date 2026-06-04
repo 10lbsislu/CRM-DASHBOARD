@@ -226,29 +226,7 @@ export default function CrmSection() {
         Süresi dolan kuponlar ve aranacaklar otomatik işaretlenir.
       </p>
 
-      {/* KPI'lar */}
-      <div className="grid grid-4">
-        <StatCard label="Toplam Müşteri" value={sum?.total_customers ?? "…"} />
-        <div className={`card stat-card kpi-alert ${onlyToCall ? "active" : ""}`}
-          onClick={() => setOnlyToCall((v) => !v)}>
-          <div className="label">Aranacak</div>
-          <div className="value">{sum?.to_call ?? "…"}</div>
-        </div>
-        <div className={`card stat-card kpi-alert ${coupon === "expired" ? "active" : ""}`}
-          style={{ borderLeftColor: "#dc2626" }} onClick={() => setCouponFilter("expired")}>
-          <div className="label">Süresi Dolmuş Kupon</div>
-          <div className="value" style={{ color: "#dc2626" }}>{sum?.coupon_expired ?? "…"}</div>
-        </div>
-        <div className={`card stat-card kpi-alert ${coupon === "expiring" ? "active" : ""}`}
-          style={{ borderLeftColor: "#ea580c" }} onClick={() => setCouponFilter("expiring")}>
-          <div className="label">Yakında Bitecek Kupon</div>
-          <div className="value" style={{ color: "#ea580c" }}>{sum?.coupon_expiring ?? "…"}</div>
-        </div>
-      </div>
-
-      <div style={{ marginTop: 16 }}>
-        <GapsReport reload={reload} onEdit={setEditing} />
-      </div>
+      <GapsReport reload={reload} onEdit={setEditing} />
 
       <div className="grid grid-2" style={{ marginTop: 16 }}>
         <Roi />
