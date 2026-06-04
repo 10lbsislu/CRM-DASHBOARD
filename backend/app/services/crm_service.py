@@ -12,9 +12,12 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models import Customer, CustomerCRM, Order
-from app.services.constants import DEFAULT_CHURN_DAYS, EXCLUDED_STATUSES
+from app.services.constants import (
+    DEFAULT_CHURN_DAYS, EXCLUDED_STATUSES, WELCOME_CAMPAIGN_START,
+)
 
 _NET = Order.status.notin_(EXCLUDED_STATUSES)
+_WELCOME_START = datetime.strptime(WELCOME_CAMPAIGN_START, "%Y-%m-%d")
 
 # Otomatik kampanya uygunluk eşikleri
 LOYALTY_MIN_ORDERS = 5          # Sadakat (%10)
@@ -37,6 +40,7 @@ def _order_stats(db: Session) -> dict[str, dict]:
             Order.customer_id,
             func.count().label("orders"),
             func.max(Order.order_date).label("last_order"),
+            func.min(Order.order_date).label("first_order"),
             func.coalesce(func.sum(Order.total), 0).label("monetary"),
         )
         .where(_NET).where(Order.customer_id.isnot(None))
@@ -48,6 +52,7 @@ def _order_stats(db: Session) -> dict[str, dict]:
         out[r.customer_id] = {
             "orders": r.orders,
             "last_order": r.last_order,
+            "first_order": r.first_order,
             "monetary": round(float(r.monetary), 2),
             "recency_days": recency,
         }
@@ -55,16 +60,22 @@ def _order_stats(db: Session) -> dict[str, dict]:
 
 
 def _eligibility(st: dict) -> list[str]:
-    """Sipariş geçmişine göre müşterinin uygun olduğu kampanyalar."""
+    """Sipariş geçmişine göre müşterinin uygun olduğu kampanyalar.
+
+    - Sadakat: 5+ sipariş
+    - Nerdesin / 25K+%5: yalnızca 90+ gündür alışveriş yapmayanlar
+    - Hoşgeldin: yalnızca kampanya başlangıcından SONRA ilk siparişini verenler
+    """
     elig = []
     orders = st.get("orders", 0)
     rec = st.get("recency_days")
+    first = st.get("first_order")
     if orders >= LOYALTY_MIN_ORDERS:
         elig.append("Sadakat")
     if rec is not None and rec >= WINBACK_DAYS:
         elig.append("Nerdesin")
         elig.append("25K+%5")
-    if orders == 1 and rec is not None and rec <= WELCOME_MAX_DAYS:
+    if first is not None and first >= _WELCOME_START:
         elig.append("Hoşgeldin")
     return elig
 
@@ -230,7 +241,8 @@ def coupon_gaps(db: Session, campaign: str | None = None) -> dict:
     tanımlanmamış (gönderilmemiş ve kodu olmayan) uygun müşteriler listelenir.
     """
     def has_coupon(r):
-        return bool(r["coupon_sent"] or r["coupon_code"])
+        # Arandıysa kupon zaten tanımlanmıştır; kupon gönderilmiş/kodu varsa da öyle.
+        return bool(r["coupon_sent"] or r["coupon_code"] or r["called"])
 
     rows = list_customers(db)
     gaps = [r for r in rows if r["eligibility"] and not has_coupon(r)]

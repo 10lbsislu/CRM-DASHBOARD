@@ -7,6 +7,11 @@ EXCLUDED_STATUSES = ["İptal Edildi", "İade Edildi", "Parçalı İade"]
 # son siparişinden bu kadar gün geçen müşteri "risk altında" sayılır.
 DEFAULT_CHURN_DAYS = 90
 
+# Hoşgeldin kampanyasının başladığı tarih. Hoşgeldin kuponu YALNIZCA bu tarihten
+# sonra İLK siparişini veren müşterilere tanımlanır (öncekiler kampanyayı kaçırdı,
+# eksik sayılmaz). Yanlışsa burayı güncelle.
+WELCOME_CAMPAIGN_START = "2026-03-01"
+
 # Market-basket: bir ürün çiftinin rapora girmesi için min birlikte görülme sayısı
 DEFAULT_MIN_PAIR_COUNT = 2
 
