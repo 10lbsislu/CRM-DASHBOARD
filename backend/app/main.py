@@ -8,7 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from app.config import BACKEND_DIR, settings
 from app.database import Base, engine
 from app import models  # noqa: F401  (modelleri Base.metadata'ya kaydeder)
-from app.api import basket, crm, customers, ingest, orders, stats
+from app.api import basket, crm, customers, ingest, logistics, orders, stats
 
 
 @asynccontextmanager
@@ -41,6 +41,7 @@ app.include_router(customers.router)
 app.include_router(basket.router)
 app.include_router(ingest.router)
 app.include_router(crm.router)
+app.include_router(logistics.router)
 
 # Build edilmiş frontend'i servis et (varsa) — tek port üzerinden dağıtım.
 # API rotalarından SONRA mount edilir ki /api/* öncelikli kalsın.

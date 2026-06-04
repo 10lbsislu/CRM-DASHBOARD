@@ -237,7 +237,6 @@ export default function CrmSection() {
                 <tr>
                   <th>Müşteri</th>
                   <th>Kampanya</th>
-                  <th>Uygunluk</th>
                   <th>Aranacak</th>
                   <th>Arandı</th>
                   <th>Kupon</th>
@@ -253,7 +252,6 @@ export default function CrmSection() {
                     <td>{r.campaign_type
                       ? <span className="badge" style={{ background: segColor(r.campaign_type) + "1a", color: segColor(r.campaign_type) }}>{r.campaign_type}</span>
                       : <span style={{ color: "var(--muted)" }}>—</span>}</td>
-                    <td style={{ fontSize: 11, color: "var(--muted)" }}>{r.eligibility?.join(", ") || "—"}</td>
                     <td onClick={(e) => e.stopPropagation()}>
                       <input type="checkbox" checked={r.to_call} onChange={(e) => toggleCall(r, "to_call", e.target.checked)} />
                     </td>
@@ -272,7 +270,7 @@ export default function CrmSection() {
                     <td className="num">{fmtMoney(r.monetary)}</td>
                   </tr>
                 ))}
-                {!data?.length && <tr><td colSpan={9} className="state">Sonuç yok</td></tr>}
+                {!data?.length && <tr><td colSpan={8} className="state">Sonuç yok</td></tr>}
               </tbody>
             </table>
           </div>

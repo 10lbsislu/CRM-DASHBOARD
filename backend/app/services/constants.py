@@ -10,6 +10,11 @@ DEFAULT_CHURN_DAYS = 90
 # Market-basket: bir ürün çiftinin rapora girmesi için min birlikte görülme sayısı
 DEFAULT_MIN_PAIR_COUNT = 2
 
+# --- Lojistik / kargo ---
+# Donuk ürünler ayrı (soğuk zincir) kargoyla gider. Karışık siparişlerde
+# (hem donuk hem soğuk) ikinci bir gönderi gerektiği için bu ekstra maliyet doğar.
+SHIPPING_DONUK_TL = 1419.0   # bir donuk gönderinin kargo bedeli (ekstra gönderi)
+
 # --- Müşteri kimlik çözümleme (mükerrer müşteri birleştirme) ---
 # Aynı telefon farklı e-postaları birleştirsin mi
 MERGE_BY_PHONE = True

@@ -4,6 +4,7 @@ import StatsSection from "./sections/StatsSection";
 import CustomersSection from "./sections/CustomersSection";
 import BasketSection from "./sections/BasketSection";
 import CrmSection from "./sections/CrmSection";
+import LogisticsSection from "./sections/LogisticsSection";
 import UploadSection from "./sections/UploadSection";
 
 const TABS = [
@@ -11,6 +12,7 @@ const TABS = [
   { id: "stats", label: "İstatistikler", el: <StatsSection /> },
   { id: "customers", label: "Müşteriler", el: <CustomersSection /> },
   { id: "crm", label: "★ CRM / Kampanya", el: <CrmSection /> },
+  { id: "logistics", label: "⛟ Lojistik", el: <LogisticsSection /> },
   { id: "basket", label: "Birlikte Alınanlar", el: <BasketSection /> },
   { id: "upload", label: "↑ Veri Yükle", el: <UploadSection /> },
 ];
