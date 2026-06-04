@@ -6,16 +6,20 @@ import { useApi } from "../hooks/useApi";
 import {
   Card, StatCard, AsyncState, fmtMoney, fmtNum, fmtDate,
   SEGMENT_META, SEGMENT_ORDER, segColor,
+  DateRangeBar, withParams, monthRange,
 } from "../components/common";
 
 // hex rengin açık tonu (rozet zemini için)
 const tint = (hex) => `${hex}1a`;
 
-function LoyaltySummary() {
-  const { data, error, loading } = useApi("/api/customers/loyalty");
+function LoyaltySummary({ start, end }) {
+  const { data, error, loading } = useApi(withParams("/api/customers/loyalty", { start, end }));
   if (loading || error || !data) {
     return <AsyncState loading={loading} error={error} data={data}><span /></AsyncState>;
   }
+  const periodNote = start
+    ? "Seçili dönemde sipariş veren müşteriler ve o dönemdeki tekrar oranı."
+    : "Tüm zamanlar: birden fazla sipariş veren müşterilerin yüzdesi (tekrar oranı). Düşükse müşteri elde tutulamıyor demektir.";
   return (
     <>
       <div className="grid grid-4">
@@ -24,11 +28,7 @@ function LoyaltySummary() {
         <StatCard label="Tekrar Eden" value={fmtNum(data.repeat)} />
         <StatCard label="Müşteri Başına Sipariş" value={data.avg_orders_per_customer} />
       </div>
-      <div className="help" style={{ marginTop: 12 }}>
-        <b>Tekrar oranı</b>, birden fazla sipariş veren müşterilerin yüzdesidir.
-        Düşükse yeni müşteri kazanılıyor ama elde tutulamıyor demektir — sadık
-        müşteri sayısını artırmak yeni müşteri bulmaktan daha ucuzdur.
-      </div>
+      <div className="help" style={{ marginTop: 12 }}>{periodNote}</div>
     </>
   );
 }
@@ -245,6 +245,11 @@ function DailyActivity() {
 }
 
 export default function CustomersSection() {
+  const { data: meta } = useApi("/api/stats/months");
+  const [sel, setSel] = useState("all");
+  const months = meta?.months || [];
+  const range = sel === "all" ? { start: null, end: null } : monthRange(sel);
+
   return (
     <section className="section">
       <h2 className="section-title">
@@ -254,7 +259,14 @@ export default function CustomersSection() {
         Müşterilerini tanı: kimler değerli, kimler kaybedilmek üzere, kim yeni geldi.
       </p>
 
-      <LoyaltySummary />
+      <div style={{ marginBottom: 16 }}>
+        <DateRangeBar months={months} value={sel} onChange={setSel} />
+        <p className="section-desc" style={{ margin: "8px 0 0" }}>
+          Dönem seçimi yukarıdaki sadakat metriklerini (tekrar oranı, tek sefer alan…) filtreler.
+        </p>
+      </div>
+
+      <LoyaltySummary start={range.start} end={range.end} />
 
       <div style={{ marginTop: 16 }}>
         <RfmSegments />

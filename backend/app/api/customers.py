@@ -42,5 +42,9 @@ def daily(date: str = Query(..., pattern=r"^\d{4}-\d{2}-\d{2}$"),
 
 
 @router.get("/loyalty")
-def loyalty(db: Session = Depends(get_db)):
-    return customers_service.loyalty_summary(db)
+def loyalty(
+    start: str | None = Query(None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    end: str | None = Query(None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    db: Session = Depends(get_db),
+):
+    return customers_service.loyalty_summary(db, start=start, end=end)

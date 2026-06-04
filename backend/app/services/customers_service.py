@@ -178,11 +178,20 @@ def daily_activity(db: Session, date: str) -> dict:
     }
 
 
-def loyalty_summary(db: Session) -> dict:
-    """Genel sadakat: tek seferlik vs tekrar eden müşteri, tekrar oranı."""
+def loyalty_summary(db: Session, start: str | None = None,
+                    end: str | None = None) -> dict:
+    """Sadakat: tek seferlik vs tekrar eden müşteri, tekrar oranı.
+
+    Tarih aralığı verilirse yalnızca o dönemdeki siparişlere göre hesaplanır.
+    """
+    dc = []
+    if start:
+        dc.append(Order.order_date >= start)
+    if end:
+        dc.append(Order.order_date < end)
     rows = db.execute(
         select(Order.customer_id, func.count())
-        .where(_NET).where(Order.customer_id.isnot(None))
+        .where(_NET, *dc).where(Order.customer_id.isnot(None))
         .group_by(Order.customer_id)
     ).all()
     counts = [c for _, c in rows]

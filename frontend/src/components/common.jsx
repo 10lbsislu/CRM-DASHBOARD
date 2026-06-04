@@ -126,3 +126,48 @@ export const SEGMENT_ORDER = [
 ];
 
 export const segColor = (seg) => SEGMENT_META[seg]?.color || "#94a3b8";
+
+// --- Dönem (ay) filtresi yardımcıları ve bileşeni ---
+export function withParams(base, params) {
+  const sp = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) if (v != null && v !== "") sp.append(k, v);
+  const q = sp.toString();
+  return q ? `${base}?${q}` : base;
+}
+
+export function monthLabel(ym) {
+  const [y, m] = ym.split("-").map(Number);
+  return new Date(y, m - 1, 1).toLocaleDateString("tr-TR", { month: "long", year: "numeric" });
+}
+
+export function monthRange(ym) {
+  const [y, m] = ym.split("-").map(Number);
+  const ny = m === 12 ? y + 1 : y;
+  const nm = m === 12 ? 1 : m + 1;
+  const p = (n) => String(n).padStart(2, "0");
+  return { start: `${ym}-01`, end: `${ny}-${p(nm)}-01` };
+}
+
+export function DateRangeBar({ months, value, onChange }) {
+  const idx = months.indexOf(value);
+  const step = (d) => {
+    const ni = idx + d;
+    if (ni >= 0 && ni < months.length) onChange(months[ni]);
+  };
+  const btn = { padding: "6px 12px", background: "var(--bg)", color: "var(--text)" };
+  return (
+    <div className="card" style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+      <b style={{ fontSize: 13 }}>Dönem:</b>
+      <button className="tab" style={{ borderRadius: 8, background: value === "all" ? "var(--accent)" : "var(--bg)", color: value === "all" ? "#fff" : "var(--text)" }}
+        onClick={() => onChange("all")}>Tüm Zamanlar</button>
+      <button className="btn" style={btn} disabled={value === "all" || idx <= 0} onClick={() => step(-1)}>◀</button>
+      <select value={value === "all" ? "" : value} onChange={(e) => onChange(e.target.value)}
+        style={{ padding: "7px 10px", border: "1px solid var(--border)", borderRadius: 8, fontSize: 14, minWidth: 150 }}>
+        <option value="" disabled>Ay seç…</option>
+        {months.map((m) => <option key={m} value={m}>{monthLabel(m)}</option>)}
+      </select>
+      <button className="btn" style={btn} disabled={value === "all" || idx < 0 || idx >= months.length - 1} onClick={() => step(1)}>▶</button>
+      <span style={{ color: "var(--muted)", fontSize: 13 }}>{value === "all" ? "Tüm siparişler" : monthLabel(value)}</span>
+    </div>
+  );
+}
