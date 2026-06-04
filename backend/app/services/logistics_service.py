@@ -95,12 +95,15 @@ def summary(db: Session, start: str | None = None, end: str | None = None) -> di
     collected = 0.0
     extra = 0.0           # karışıktan doğan ekstra (ikinci) gönderi maliyeti
     rule_based = False    # en az bir siparişte kademeli kural uygulandı mı
+    tiers = {k: {"orders": 0, "our_cost": 0.0, "collected": 0.0}
+             for k in ("free", "mid", "low", "none")}
     for o in orders:
         month = o["date"].strftime("%Y-%m") if o["date"] else None
         cfg = cfgs.get(month)
         cost_per = cfg.shipping_cost if cfg else SHIPPING_DONUK_TL
         is_mixed = o["type"] == "mixed"
-        our_cost += (2 if is_mixed else 1) * cost_per
+        order_cost = (2 if is_mixed else 1) * cost_per
+        our_cost += order_cost
         if is_mixed:
             extra += cost_per
         exp = _expected_shipping(cfg, o["total"])
@@ -112,7 +115,38 @@ def summary(db: Session, start: str | None = None, end: str | None = None) -> di
         o["_cust_ship"] = cs
         collected += cs
 
+        # Kargo kademesi (aya özel kural varsa)
+        if cfg and cfg.low_threshold is not None and cfg.free_threshold is not None:
+            if o["total"] >= cfg.free_threshold:
+                tk = "free"
+            elif o["total"] < cfg.low_threshold:
+                tk = "low"
+            else:
+                tk = "mid"
+        else:
+            tk = "none"
+        tb = tiers[tk]
+        tb["orders"] += 1
+        tb["our_cost"] += order_cost
+        tb["collected"] += cs
+
     net_cost = our_cost - collected
+
+    _tier_labels = {
+        "free": "Ücretsiz kargo", "mid": "Orta kademe",
+        "low": "Düşük kademe (alt eşik altı)", "none": "Kural tanımsız",
+    }
+    tier_breakdown = [
+        {
+            "key": k, "label": _tier_labels[k], "orders": tiers[k]["orders"],
+            "our_cost": round(tiers[k]["our_cost"], 2),
+            "collected": round(tiers[k]["collected"], 2),
+            "net": round(tiers[k]["our_cost"] - tiers[k]["collected"], 2),
+            "net_pct": round((tiers[k]["our_cost"] - tiers[k]["collected"]) * 100 / net_cost, 1)
+            if net_cost else 0,
+        }
+        for k in ("free", "mid", "low", "none") if tiers[k]["orders"]
+    ]
 
     def _avg_ship(group):
         return round(sum(o["_cust_ship"] for o in group) / len(group), 0) if group else 0
@@ -135,6 +169,7 @@ def summary(db: Session, start: str | None = None, end: str | None = None) -> di
         "extra_shipping_cost": round(extra, 2),
         "shipping_per_order": round(our_cost / shipments) if shipments else SHIPPING_DONUK_TL,
         "rule_based_shipping": rule_based,
+        "tier_breakdown": tier_breakdown,
         "mixed_revenue": round(mixed_revenue, 2),
         "mixed_revenue_pct": round(mixed_revenue * 100 / total_revenue, 1) if total_revenue else 0,
         "total_revenue": round(total_revenue, 2),

@@ -129,6 +129,56 @@ function ConfigModal({ onClose, onSaved }) {
   );
 }
 
+function TierBreakdown({ sum }) {
+  const tb = sum.tier_breakdown || [];
+  if (!tb.length || !sum.rule_based_shipping) return null;
+  const free = tb.find((t) => t.key === "free");
+  const colors = { free: "#dc2626", mid: "#f59e0b", low: "#2563eb", none: "#94a3b8" };
+  return (
+    <Card title="Kargo Bedeli Kademe Dağılımı">
+      <p className="section-desc" style={{ margin: "0 0 10px" }}>
+        Girilen kurala göre siparişler hangi kademeye düşüyor ve net kargo maliyetinin
+        ne kadarını oluşturuyor.
+      </p>
+      {free && (
+        <div className="help" style={{ marginBottom: 12, background: "#fef2f2", color: "#991b1b" }}>
+          <b>Ücretsiz kargo</b> siparişleri ({free.orders} sipariş) net kargo maliyetinin{" "}
+          <b>%{free.net_pct}</b>'ini ({fmtMoney(free.net)}) oluşturuyor — bu siparişlerden
+          kargo alınmıyor, maliyetin tamamı bize kalıyor.
+        </div>
+      )}
+      <table>
+        <thead>
+          <tr>
+            <th>Kademe</th>
+            <th className="num">Sipariş</th>
+            <th className="num">Bizim Gider</th>
+            <th className="num">Alınan</th>
+            <th className="num">Net</th>
+            <th className="num">Net %</th>
+          </tr>
+        </thead>
+        <tbody>
+          {tb.map((t) => (
+            <tr key={t.key}>
+              <td>
+                <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: 2,
+                  background: colors[t.key], marginRight: 8 }} />
+                {t.label}
+              </td>
+              <td className="num">{t.orders}</td>
+              <td className="num">{fmtMoney(t.our_cost)}</td>
+              <td className="num">{fmtMoney(t.collected)}</td>
+              <td className="num"><b>{fmtMoney(t.net)}</b></td>
+              <td className="num">%{t.net_pct}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </Card>
+  );
+}
+
 function TypeBreakdown({ sum }) {
   const data = [
     { name: "Sadece Soğuk", value: sum.only_soguk, color: "#16a34a" },
@@ -190,11 +240,17 @@ export default function LogisticsSection() {
         "Lojistik Bedelini Düzenle" ile tanımlanır; veriler buna göre hesaplanır.
       </p>
 
-      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "stretch", marginBottom: 16 }}>
-        <div style={{ flex: "1 1 auto" }}>
+      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", marginBottom: 16 }}>
+        <div style={{ flex: "1 1 320px" }}>
           <DateRangeBar months={months} value={sel} onChange={setSel} />
         </div>
-        <button className="btn" onClick={() => setShowConfig(true)}>⚙ Lojistik Bedelini Düzenle</button>
+        <button
+          className="btn"
+          style={{ background: "var(--card-bg)", color: "var(--accent)", border: "1px solid var(--accent)", whiteSpace: "nowrap" }}
+          onClick={() => setShowConfig(true)}
+        >
+          ⚙ Lojistik Bedelini Düzenle
+        </button>
       </div>
 
       <AsyncState loading={loading} error={error} data={sum}>
@@ -228,6 +284,12 @@ export default function LogisticsSection() {
               <div className="help" style={{ marginTop: 12, background: "#fff7ed", color: "#9a3412" }}>
                 Bu dönem için aya özel kargo kuralı tanımlı değil — müşteri kargosu sipariş verisindeki
                 "Kargo Fiyatı"ndan alınıyor. Daha doğru sonuç için "⚙ Lojistik Bedelini Düzenle"den o ayın kuralını gir.
+              </div>
+            )}
+
+            {sum.tier_breakdown?.length > 0 && (
+              <div style={{ marginTop: 16 }}>
+                <TierBreakdown sum={sum} />
               </div>
             )}
 
