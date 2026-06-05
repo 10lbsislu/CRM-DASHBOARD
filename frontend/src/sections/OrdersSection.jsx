@@ -148,7 +148,7 @@ function AllOrders() {
                   className="clickable-row"
                   onClick={() => setSel(o.order_number)}
                 >
-                  <td>#{o.order_number}</td>
+                  <td style={{ background: orderTierColor(o.total) + "26", fontWeight: 600 }}>#{o.order_number}</td>
                   <td>{fmtDate(o.order_date)}</td>
                   <td>{o.customer_name}</td>
                   <td>{o.city || "-"}</td>
@@ -159,7 +159,7 @@ function AllOrders() {
                   </td>
                   <td><span className="badge">{o.status || "-"}</span></td>
                   <td className="num">{o.item_count}</td>
-                  <td className="num" style={{ color: orderTierColor(o.total), fontWeight: 600 }}>{fmtMoney(o.total)}</td>
+                  <td className="num">{fmtMoney(o.total)}</td>
                 </tr>
               ))}
               {!filtered.length && (
