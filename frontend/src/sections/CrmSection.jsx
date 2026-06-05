@@ -122,7 +122,11 @@ function DiscountImpact() {
       <AsyncState loading={loading} error={error} data={data}>
         {data && (
           <>
-            <div className="grid grid-4">
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(165px, 1fr))", gap: 16 }}>
+              <div className="card stat-card" style={{ borderLeft: "4px solid #1b4f9b" }}>
+                <div className="label">Genel Ciro</div>
+                <div className="value">{fmtMoney(data.total_revenue)}</div>
+              </div>
               <div className="card stat-card" style={{ borderLeft: "4px solid #dc2626" }}>
                 <div className="label">İndirim Maliyeti</div>
                 <div className="value" style={{ color: "#dc2626" }}>{fmtMoney(data.total_discount)}</div>
@@ -133,7 +137,13 @@ function DiscountImpact() {
                 <div className="value">{data.discounted_orders} <span style={{ fontSize: 14, color: "var(--muted)" }}>/ {data.total_orders}</span></div>
                 <div className="label" style={{ marginTop: 4 }}>siparişlerin %{data.discounted_order_pct}'i</div>
               </div>
-              <StatCard label="İndirimli Sipariş Cirosu" value={fmtMoney(data.discounted_revenue)} />
+              <div className="card stat-card">
+                <div className="label">İndirimli Sipariş Cirosu</div>
+                <div className="value">{fmtMoney(data.discounted_revenue)}</div>
+                <div className="label" style={{ marginTop: 4 }}>
+                  genel cironun %{data.total_revenue ? ((data.discounted_revenue * 100) / data.total_revenue).toFixed(1) : 0}'i
+                </div>
+              </div>
               <StatCard label="Ort. İndirim / Sipariş" value={fmtMoney(data.avg_discount_per_order)} />
             </div>
             <div className="help" style={{ marginTop: 12 }}>
@@ -269,11 +279,11 @@ export default function CrmSection() {
         Süresi dolan kuponlar ve aranacaklar otomatik işaretlenir.
       </p>
 
-      <GapsReport reload={reload} onEdit={setEditing} />
-
-      <div style={{ marginTop: 16 }}>
+      <div style={{ marginBottom: 16 }}>
         <DiscountImpact />
       </div>
+
+      <GapsReport reload={reload} onEdit={setEditing} />
 
       <div className="grid grid-2" style={{ marginTop: 16 }}>
         <Roi />
