@@ -122,7 +122,7 @@ function AllOrders() {
         onChange={(e) => setQ(e.target.value)}
       />
       <div style={{ display: "flex", gap: 14, marginTop: 8, fontSize: 12, color: "var(--muted)" }}>
-        <span><span style={{ color: "#b45309", fontWeight: 700 }}>●</span> &lt;10.000 ₺</span>
+        <span><span style={{ color: "#dc2626", fontWeight: 700 }}>●</span> &lt;10.000 ₺</span>
         <span><span style={{ color: "#2563eb", fontWeight: 700 }}>●</span> 10.000–20.000 ₺</span>
         <span><span style={{ color: "#16a34a", fontWeight: 700 }}>●</span> 20.000 ₺+</span>
       </div>
@@ -148,7 +148,7 @@ function AllOrders() {
                   className="clickable-row"
                   onClick={() => setSel(o.order_number)}
                 >
-                  <td style={{ background: orderTierColor(o.total) + "26", fontWeight: 600 }}>#{o.order_number}</td>
+                  <td style={{ background: orderTierColor(o.total), color: "#fff", fontWeight: 700 }}>#{o.order_number}</td>
                   <td>{fmtDate(o.order_date)}</td>
                   <td>{o.customer_name}</td>
                   <td>{o.city || "-"}</td>
