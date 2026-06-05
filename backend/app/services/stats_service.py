@@ -6,7 +6,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models import Customer, Order, OrderItem
-from app.services.constants import EXCLUDED_STATUSES
+from app.services.constants import CONCENTRATION_THRESHOLDS, EXCLUDED_STATUSES
 
 # Net ciroya dahil siparişleri seçen ortak filtre
 _NET = Order.status.notin_(EXCLUDED_STATUSES)
@@ -134,6 +134,45 @@ def by_city(db: Session, limit: int = 15,
         .limit(limit)
     )
     return [
-        {"city": r.city, "orders": r.orders, "revenue": round(r.revenue, 2)}
+        {
+            "city": r.city, "orders": r.orders, "revenue": round(r.revenue, 2),
+            "avg_basket": round(r.revenue / r.orders, 2) if r.orders else 0,
+        }
         for r in db.execute(q).all()
     ]
+
+
+def concentration(db: Session, start: str | None = None,
+                  end: str | None = None) -> dict:
+    """Konsantrasyon riski: ilk 3/5/10 müşterinin toplam ciro içindeki payı."""
+    dc = _date_conds(start, end)
+    rows = db.execute(
+        select(
+            Order.customer_id, Customer.full_name,
+            func.coalesce(func.sum(Order.total), 0).label("rev"),
+        )
+        .outerjoin(Customer, Order.customer_id == Customer.id)
+        .where(_NET, *dc).where(Order.customer_id.isnot(None))
+        .group_by(Order.customer_id)
+        .order_by(func.sum(Order.total).desc())
+    ).all()
+    revs = [float(r.rev) for r in rows]
+    total = sum(revs) or 0
+
+    def share(n: int) -> float:
+        return round(sum(revs[:n]) * 100 / total, 1) if total else 0
+
+    levels = []
+    for n in (3, 5, 10):
+        pct = share(n)
+        thr = CONCENTRATION_THRESHOLDS.get(n, 100)
+        levels.append({"top": n, "pct": pct, "threshold": thr, "risk": pct >= thr})
+    return {
+        "total_revenue": round(total, 2),
+        "customer_count": len(revs),
+        "levels": levels,
+        "top_customers": [
+            {"name": r.full_name or r.customer_id, "revenue": round(float(r.rev), 2)}
+            for r in rows[:10]
+        ],
+    }

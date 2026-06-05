@@ -49,6 +49,15 @@ def top_customers(
     return stats_service.top_customers(db, limit=limit, start=start, end=end)
 
 
+@router.get("/concentration")
+def concentration(
+    start: str | None = Query(None, pattern=_DATE),
+    end: str | None = Query(None, pattern=_DATE),
+    db: Session = Depends(get_db),
+):
+    return stats_service.concentration(db, start=start, end=end)
+
+
 @router.get("/by-city")
 def by_city(
     limit: int = Query(15, ge=1, le=100),

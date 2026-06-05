@@ -24,6 +24,10 @@ TEST_CUSTOMER_EMAILS = {
 }
 
 
+# --- Konsantrasyon risk eşikleri (ilk N müşterinin ciro payı bu %'yi geçerse risk) ---
+CONCENTRATION_THRESHOLDS = {3: 30.0, 5: 45.0, 10: 60.0}
+
+
 # --- Lojistik / kargo ---
 # Donuk ürünler ayrı (soğuk zincir) kargoyla gider. Karışık siparişlerde
 # (hem donuk hem soğuk) ikinci bir gönderi gerektiği için bu ekstra maliyet doğar.

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis,
-  CartesianGrid, Tooltip,
+  CartesianGrid, Tooltip, ComposedChart, Line, Legend,
 } from "recharts";
 import { useApi } from "../hooks/useApi";
 import {
@@ -148,17 +148,55 @@ function ByCity({ start, end }) {
     withParams("/api/stats/by-city", { limit: 10, start, end })
   );
   return (
-    <Card title="Şehir Kırılımı (Ciro)">
+    <Card title="Şehir Kırılımı — Ciro & Ortalama Sepet">
+      <p className="section-desc" style={{ margin: "0 0 10px" }}>
+        Çubuk: toplam ciro · Çizgi: ortalama sepet. Yüksek sepet = kaliteli müşteri,
+        düşük sepet = büyüme potansiyeli.
+      </p>
       <AsyncState loading={loading} error={error} data={data}>
         <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={data || []} margin={{ left: 10, right: 10 }}>
+          <ComposedChart data={data || []} margin={{ left: 10, right: 10 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
             <XAxis dataKey="city" fontSize={10} angle={-25} textAnchor="end" height={60} />
-            <YAxis fontSize={11} tickFormatter={fmtNum} />
+            <YAxis yAxisId="l" fontSize={11} tickFormatter={fmtNum} />
+            <YAxis yAxisId="r" orientation="right" fontSize={11} tickFormatter={fmtNum} />
             <Tooltip formatter={(v) => fmtMoney(v)} />
-            <Bar dataKey="revenue" name="Ciro" fill="#16a34a" radius={[4, 4, 0, 0]} />
-          </BarChart>
+            <Legend />
+            <Bar yAxisId="l" dataKey="revenue" name="Ciro" fill="#16a34a" radius={[4, 4, 0, 0]} />
+            <Line yAxisId="r" dataKey="avg_basket" name="Ort. Sepet" stroke="#dc2626" strokeWidth={2} dot={{ r: 3 }} />
+          </ComposedChart>
         </ResponsiveContainer>
+      </AsyncState>
+    </Card>
+  );
+}
+
+function Concentration({ start, end }) {
+  const { data, error, loading } = useApi(withParams("/api/stats/concentration", { start, end }));
+  const top3 = data?.levels?.find((l) => l.top === 3);
+  return (
+    <Card title="Konsantrasyon Risk Göstergesi">
+      <AsyncState loading={loading} error={error} data={data}>
+        {data && (
+          <>
+            <div className="help" style={{ marginBottom: 12, ...(top3?.risk ? { background: "#fef2f2", color: "#991b1b" } : {}) }}>
+              {top3?.risk ? "⚠ " : ""}Top 3 müşteri toplam cironun <b>%{top3?.pct}</b>'ini oluşturuyor.
+              Ciro az sayıda müşteriye bağımlıysa risk artar — eşik aşılan kutular kırmızı.
+            </div>
+            <div className="grid" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
+              {data.levels.map((l) => (
+                <div key={l.top} className="card stat-card"
+                  style={{ borderLeft: `4px solid ${l.risk ? "#dc2626" : "#16a34a"}` }}>
+                  <div className="label">Top {l.top} Müşteri Payı</div>
+                  <div className="value" style={{ color: l.risk ? "#dc2626" : "var(--text)" }}>%{l.pct}</div>
+                  <div className="label" style={{ marginTop: 4 }}>
+                    eşik %{l.threshold}{l.risk ? " · RİSK" : " · normal"}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </AsyncState>
     </Card>
   );
@@ -189,6 +227,9 @@ export default function StatsSection() {
       ) : (
         <>
           <Summary start={range.start} end={range.end} />
+          <div style={{ marginTop: 16 }}>
+            <Concentration start={range.start} end={range.end} />
+          </div>
           <div className="grid grid-2" style={{ marginTop: 16 }}>
             <TopProducts start={range.start} end={range.end} by="revenue" />
             <TopProducts start={range.start} end={range.end} by="quantity" />
