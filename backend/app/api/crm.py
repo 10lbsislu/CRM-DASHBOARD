@@ -55,6 +55,15 @@ def gaps(campaign: str | None = None, db: Session = Depends(get_db)):
     return crm_service.coupon_gaps(db, campaign=campaign)
 
 
+@router.get("/discount-impact")
+def discount_impact(
+    start: str | None = Query(None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    end: str | None = Query(None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    db: Session = Depends(get_db),
+):
+    return crm_service.discount_impact(db, start=start, end=end)
+
+
 @router.get("/campaign-roi")
 def campaign_roi(
     period: str = Query("month", pattern="^(day|week|month)$"),

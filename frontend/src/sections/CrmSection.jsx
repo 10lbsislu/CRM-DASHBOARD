@@ -6,6 +6,7 @@ import { useApi } from "../hooks/useApi";
 import { apiPatch } from "../api/client";
 import {
   Card, StatCard, Modal, AsyncState, fmtMoney, fmtDate, segColor,
+  DateRangeBar, withParams, monthRange,
 } from "../components/common";
 
 const CAMPAIGN_OPTS = ["Hoşgeldin", "Sadakat", "Nerdesin", "25.000TL ve Üstüne %5"];
@@ -101,6 +102,48 @@ function EditModal({ row, onClose, onSaved }) {
         <button className="btn" disabled={busy} onClick={save}>{busy ? "Kaydediliyor…" : "Kaydet"}</button>
       </div>
     </Modal>
+  );
+}
+
+function DiscountImpact() {
+  const { data: meta } = useApi("/api/stats/months");
+  const [sel, setSel] = useState("all");
+  const months = meta?.months || [];
+  const range = sel === "all" ? { start: null, end: null } : monthRange(sel);
+  const { data, error, loading } = useApi(withParams("/api/crm/discount-impact", range));
+  return (
+    <Card title="İndirimin Ciroya Etkisi">
+      <p className="section-desc" style={{ margin: "0 0 10px" }}>
+        Data'daki gerçek indirimli siparişlerden (Kampanya Toplamı &gt; 0) hesaplanır. Dönem seçilebilir.
+      </p>
+      <div style={{ marginBottom: 12 }}>
+        <DateRangeBar months={months} value={sel} onChange={setSel} />
+      </div>
+      <AsyncState loading={loading} error={error} data={data}>
+        {data && (
+          <>
+            <div className="grid grid-4">
+              <div className="card stat-card" style={{ borderLeft: "4px solid #dc2626" }}>
+                <div className="label">İndirim Maliyeti</div>
+                <div className="value" style={{ color: "#dc2626" }}>{fmtMoney(data.total_discount)}</div>
+                <div className="label" style={{ marginTop: 4 }}>cironun %{data.discount_pct_of_revenue}'i</div>
+              </div>
+              <div className="card stat-card">
+                <div className="label">İndirimli Sipariş</div>
+                <div className="value">{data.discounted_orders} <span style={{ fontSize: 14, color: "var(--muted)" }}>/ {data.total_orders}</span></div>
+                <div className="label" style={{ marginTop: 4 }}>siparişlerin %{data.discounted_order_pct}'i</div>
+              </div>
+              <StatCard label="İndirimli Sipariş Cirosu" value={fmtMoney(data.discounted_revenue)} />
+              <StatCard label="Ort. İndirim / Sipariş" value={fmtMoney(data.avg_discount_per_order)} />
+            </div>
+            <div className="help" style={{ marginTop: 12 }}>
+              Seçili dönemde toplam <b>{fmtMoney(data.total_discount)}</b> indirim verildi
+              (cironun %{data.discount_pct_of_revenue}'i). Bu, kampanyaların ciroya doğrudan maliyetidir.
+            </div>
+          </>
+        )}
+      </AsyncState>
+    </Card>
   );
 }
 
@@ -227,6 +270,10 @@ export default function CrmSection() {
       </p>
 
       <GapsReport reload={reload} onEdit={setEditing} />
+
+      <div style={{ marginTop: 16 }}>
+        <DiscountImpact />
+      </div>
 
       <div className="grid grid-2" style={{ marginTop: 16 }}>
         <Roi />

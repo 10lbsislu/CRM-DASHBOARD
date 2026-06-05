@@ -4,7 +4,7 @@ import {
   CartesianGrid, Tooltip, Legend,
 } from "recharts";
 import { useApi } from "../hooks/useApi";
-import { Card, Modal, AsyncState, fmtMoney, fmtMoney2, fmtDate } from "../components/common";
+import { Card, Modal, AsyncState, fmtMoney, fmtMoney2, fmtDate, orderTierColor } from "../components/common";
 
 function Trend() {
   const [period, setPeriod] = useState("month");
@@ -121,6 +121,11 @@ function AllOrders() {
         value={q}
         onChange={(e) => setQ(e.target.value)}
       />
+      <div style={{ display: "flex", gap: 14, marginTop: 8, fontSize: 12, color: "var(--muted)" }}>
+        <span><span style={{ color: "#b45309", fontWeight: 700 }}>●</span> &lt;10.000 ₺</span>
+        <span><span style={{ color: "#2563eb", fontWeight: 700 }}>●</span> 10.000–20.000 ₺</span>
+        <span><span style={{ color: "#16a34a", fontWeight: 700 }}>●</span> 20.000 ₺+</span>
+      </div>
       <AsyncState loading={loading} error={error} data={data}>
         <div style={{ maxHeight: 600, overflowY: "auto", marginTop: 12 }}>
           <table>
@@ -154,7 +159,7 @@ function AllOrders() {
                   </td>
                   <td><span className="badge">{o.status || "-"}</span></td>
                   <td className="num">{o.item_count}</td>
-                  <td className="num">{fmtMoney(o.total)}</td>
+                  <td className="num" style={{ color: orderTierColor(o.total), fontWeight: 600 }}>{fmtMoney(o.total)}</td>
                 </tr>
               ))}
               {!filtered.length && (

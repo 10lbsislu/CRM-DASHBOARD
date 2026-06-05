@@ -127,6 +127,14 @@ export const SEGMENT_ORDER = [
 
 export const segColor = (seg) => SEGMENT_META[seg]?.color || "#94a3b8";
 
+// Sipariş tutarı kademesine göre renk (<10k / 10–20k / 20k+)
+export function orderTierColor(total) {
+  if (total == null) return "var(--text)";
+  if (total < 10000) return "#b45309";   // küçük — amber
+  if (total < 20000) return "#2563eb";   // orta — mavi
+  return "#16a34a";                       // büyük — yeşil
+}
+
 // --- Dönem (ay) filtresi yardımcıları ve bileşeni ---
 export function withParams(base, params) {
   const sp = new URLSearchParams();

@@ -178,6 +178,45 @@ def daily_activity(db: Session, date: str) -> dict:
     }
 
 
+def reorder_interval(db: Session) -> dict:
+    """Müşterilerin siparişleri arası ortalama süre (kaç günde bir sipariş)."""
+    rows = db.execute(
+        select(Order.customer_id, Order.order_date)
+        .where(_NET).where(Order.customer_id.isnot(None)).where(Order.order_date.isnot(None))
+        .order_by(Order.customer_id, Order.order_date)
+    ).all()
+    by_cust: dict[str, list] = defaultdict(list)
+    for cid, d in rows:
+        by_cust[cid].append(d)
+
+    names = _name_map(db)
+    all_gaps: list[int] = []
+    per_cust = []
+    for cid, dates in by_cust.items():
+        if len(dates) < 2:
+            continue
+        gaps = [(dates[i] - dates[i - 1]).days for i in range(1, len(dates))]
+        all_gaps.extend(gaps)
+        per_cust.append({
+            "name": names.get(cid, cid),
+            "orders": len(dates),
+            "avg_days": round(sum(gaps) / len(gaps), 1),
+        })
+
+    if not all_gaps:
+        return {"avg_days": None, "median_days": None, "repeat_customers": 0, "fastest": []}
+    s = sorted(all_gaps)
+    n = len(s)
+    median = s[n // 2] if n % 2 else (s[n // 2 - 1] + s[n // 2]) / 2
+    fastest = sorted(per_cust, key=lambda x: x["avg_days"])[:10]
+    return {
+        "avg_days": round(sum(all_gaps) / len(all_gaps), 1),
+        "median_days": round(median, 1),
+        "repeat_customers": len(per_cust),
+        "fastest": fastest,
+    }
+
+
 def loyalty_summary(db: Session, start: str | None = None,
                     end: str | None = None) -> dict:
     """Sadakat: tek seferlik vs tekrar eden müşteri, tekrar oranı.

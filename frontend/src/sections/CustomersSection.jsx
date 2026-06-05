@@ -33,6 +33,40 @@ function LoyaltySummary({ start, end }) {
   );
 }
 
+function ReorderInterval() {
+  const { data, error, loading } = useApi("/api/customers/reorder-interval");
+  return (
+    <Card title="Sipariş Yenileme Sıklığı">
+      <p className="section-desc" style={{ margin: "0 0 10px" }}>
+        Tekrar eden müşteriler kaç günde bir sipariş veriyor (ardışık siparişler arası ortalama).
+      </p>
+      <AsyncState loading={loading} error={error} data={data}>
+        {data && (
+          <>
+            <div className="grid grid-2" style={{ marginBottom: 12 }}>
+              <StatCard label="Ortalama Yenileme" value={data.avg_days != null ? `${data.avg_days} gün` : "-"} />
+              <StatCard label="Medyan" value={data.median_days != null ? `${data.median_days} gün` : "-"} />
+            </div>
+            <div className="help" style={{ marginBottom: 10 }}>
+              {data.repeat_customers} tekrar eden müşteri üzerinden hesaplandı. En sık yenileyenler:
+            </div>
+            <div style={{ maxHeight: 220, overflowY: "auto" }}>
+              <table>
+                <thead><tr><th>Müşteri</th><th className="num">Sipariş</th><th className="num">Ort. Aralık</th></tr></thead>
+                <tbody>
+                  {(data.fastest || []).map((c, i) => (
+                    <tr key={i}><td>{c.name}</td><td className="num">{c.orders}</td><td className="num">{c.avg_days} gün</td></tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+      </AsyncState>
+    </Card>
+  );
+}
+
 function RfmSegments() {
   const { data, error, loading } = useApi("/api/customers/rfm");
   const dist = data?.segment_distribution || [];
@@ -278,7 +312,11 @@ export default function CustomersSection() {
       </div>
 
       <div className="grid grid-2" style={{ marginTop: 16 }}>
+        <ReorderInterval />
         <NewReturning />
+      </div>
+
+      <div style={{ marginTop: 16 }}>
         <DailyActivity />
       </div>
     </section>

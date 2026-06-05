@@ -41,6 +41,11 @@ def daily(date: str = Query(..., pattern=r"^\d{4}-\d{2}-\d{2}$"),
     return customers_service.daily_activity(db, date=date)
 
 
+@router.get("/reorder-interval")
+def reorder_interval(db: Session = Depends(get_db)):
+    return customers_service.reorder_interval(db)
+
+
 @router.get("/loyalty")
 def loyalty(
     start: str | None = Query(None, pattern=r"^\d{4}-\d{2}-\d{2}$"),

@@ -272,6 +272,46 @@ def coupon_gaps(db: Session, campaign: str | None = None) -> dict:
     }
 
 
+def discount_impact(db: Session, start: str | None = None,
+                    end: str | None = None) -> dict:
+    """İndirimin ciroya etkisi — data'daki indirimli siparişlerden (Kampanya Toplamı>0).
+
+    İndirimli sipariş = Kampanya Toplamı (campaign_total) > 0 olan sipariş.
+    """
+    dc = []
+    if start:
+        dc.append(Order.order_date >= start)
+    if end:
+        dc.append(Order.order_date < end)
+
+    total_revenue = db.scalar(
+        select(func.coalesce(func.sum(Order.total), 0)).where(_NET, *dc)
+    ) or 0
+    total_orders = db.scalar(select(func.count()).select_from(Order).where(_NET, *dc)) or 0
+
+    disc_filter = [Order.campaign_total.isnot(None), Order.campaign_total > 0]
+    discounted_orders = db.scalar(
+        select(func.count()).select_from(Order).where(_NET, *dc, *disc_filter)
+    ) or 0
+    total_discount = db.scalar(
+        select(func.coalesce(func.sum(Order.campaign_total), 0)).where(_NET, *dc, *disc_filter)
+    ) or 0
+    discounted_revenue = db.scalar(
+        select(func.coalesce(func.sum(Order.total), 0)).where(_NET, *dc, *disc_filter)
+    ) or 0
+
+    return {
+        "total_orders": total_orders,
+        "total_revenue": round(total_revenue, 2),
+        "discounted_orders": discounted_orders,
+        "discounted_revenue": round(discounted_revenue, 2),
+        "total_discount": round(total_discount, 2),
+        "discount_pct_of_revenue": round(total_discount * 100 / total_revenue, 2) if total_revenue else 0,
+        "discounted_order_pct": round(discounted_orders * 100 / total_orders, 1) if total_orders else 0,
+        "avg_discount_per_order": round(total_discount / discounted_orders, 2) if discounted_orders else 0,
+    }
+
+
 def campaign_roi(db: Session, period: str = "month") -> list[dict]:
     """Kampanya indirimi etkisi — siparişlerdeki Kampanya Toplamı'ndan."""
     fmt = _PERIOD_FMT.get(period, _PERIOD_FMT["month"])
