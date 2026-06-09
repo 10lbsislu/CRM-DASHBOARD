@@ -47,9 +47,10 @@ cd backend
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 .\.venv\Scripts\python.exe -m app.ingestion.run            # CSV -> SQLite
-.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload
-# API:    http://127.0.0.1:8000
-# Swagger: http://127.0.0.1:8000/docs
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8010
+# API:    http://127.0.0.1:8010
+# Swagger: http://127.0.0.1:8010/docs
+# (Port 8010 — 8000'i Pakyürek PHP sitesi kullanıyor)
 ```
 
 ### 3) Frontend (Vite + React)
@@ -61,7 +62,7 @@ npm run dev
 ```
 
 ## Ağda (LAN) Dağıtım
-Frontend build edilip backend tarafından tek port (8000) üzerinden servis edilir.
+Frontend build edilip backend tarafından tek port (8010) üzerinden servis edilir.
 
 1. **Frontend'i build et** (kod/veri değişince tekrar):
    ```powershell
@@ -70,14 +71,14 @@ Frontend build edilip backend tarafından tek port (8000) üzerinden servis edil
    ```
 2. **Güvenlik duvarına izin ver** (bir kez, YÖNETİCİ PowerShell):
    ```powershell
-   New-NetFirewallRule -DisplayName "mezzeMarin CRM 8000" -Direction Inbound -Protocol TCP -LocalPort 8000 -Action Allow -Profile Private
+   New-NetFirewallRule -DisplayName "mezzeMarin CRM 8010" -Direction Inbound -Protocol TCP -LocalPort 8010 -Action Allow -Profile Private
    ```
 3. **Sunucuyu başlat** (proje kökünde):
    ```powershell
    .\start-server.ps1
    ```
-   veya: `cd backend; .\.venv\Scripts\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 8000`
-4. **Ağdaki cihazlardan eriş:** `http://<bu-bilgisayarın-IP>:8000`
+   veya: `cd backend; .\.venv\Scripts\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 8010`
+4. **Ağdaki cihazlardan eriş:** `http://<bu-bilgisayarın-IP>:8010`
 
 > ⚠️ **Güvenlik:** Panelde kimlik doğrulama yok — ağdaki herkes müşteri verisini görebilir. Sadece güvenilir yerel ağda kullan.
 > ⚠️ **VPN:** Surfshark vb. açıkken yerel ağ erişimi engellenebilir; "yerel ağ paylaşımına izin ver" seçeneğini açın ya da VPN'i geçici durdurun.

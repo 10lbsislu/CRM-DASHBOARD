@@ -13,10 +13,10 @@ $ip = (Get-NetIPAddress -AddressFamily IPv4 |
 
 Write-Host "============================================"
 Write-Host " mezzeMarin CRM ag sunucusu basliyor..."
-Write-Host " Bu cihazda:   http://localhost:8000"
-if ($ip) { Write-Host " Agdaki cihazlar: http://${ip}:8000" }
+Write-Host " Bu cihazda:   http://localhost:8010"
+if ($ip) { Write-Host " Agdaki cihazlar: http://${ip}:8010" }
 Write-Host " Durdurmak icin: Ctrl+C"
 Write-Host "============================================"
 
 Set-Location "$root\backend"
-& ".\.venv\Scripts\python.exe" -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+& ".\.venv\Scripts\python.exe" -m uvicorn app.main:app --host 0.0.0.0 --port 8010

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
 } from "recharts";
@@ -240,7 +240,7 @@ function GapsReport({ reload, onEdit }) {
   );
 }
 
-export default function CrmSection() {
+export default function CrmSection({ focusCustomer, onFocusHandled }) {
   const [reload, setReload] = useState(0);
   const [editing, setEditing] = useState(null);
   const [search, setSearch] = useState("");
@@ -250,6 +250,11 @@ export default function CrmSection() {
   const [onlyToCall, setOnlyToCall] = useState(false);
 
   const bump = () => setReload((r) => r + 1);
+
+  // Siparişler sekmesinden "CRM'e git" ile gelindiyse o müşteriye odaklan
+  useEffect(() => {
+    if (focusCustomer) setSearch(focusCustomer);
+  }, [focusCustomer]);
 
   const params = new URLSearchParams();
   if (search) params.append("search", search);
@@ -261,6 +266,15 @@ export default function CrmSection() {
 
   const { data, error, loading } = useApi(`/api/crm/customers?${params}`);
   const { data: sum } = useApi(`/api/crm/summary?_r=${reload}`);
+
+  // Odak müşterinin kaydı gelince düzenleme modalını otomatik aç
+  useEffect(() => {
+    if (focusCustomer && data) {
+      const row = data.find((r) => r.customer_id === focusCustomer);
+      if (row) setEditing(row);
+      onFocusHandled?.();
+    }
+  }, [focusCustomer, data, onFocusHandled]);
 
   const toggleCall = async (row, field, value) => {
     await apiPatch(`/api/crm/customers/${encodeURIComponent(row.customer_id)}`, { [field]: value });

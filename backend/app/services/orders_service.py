@@ -130,6 +130,7 @@ def order_detail(db: Session, order_number: str) -> dict | None:
     return {
         "order_number": o.order_number,
         "order_date": o.order_date,
+        "customer_id": o.customer_id,
         "customer_name": name,
         "customer_email": o.customer_email,
         "city": o.city,

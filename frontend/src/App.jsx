@@ -8,18 +8,36 @@ import LogisticsSection from "./sections/LogisticsSection";
 import UploadSection from "./sections/UploadSection";
 
 const TABS = [
-  { id: "orders", label: "Siparişler", el: <OrdersSection /> },
-  { id: "stats", label: "İstatistikler", el: <StatsSection /> },
-  { id: "customers", label: "Müşteriler", el: <CustomersSection /> },
-  { id: "crm", label: "★ CRM / Kampanya", el: <CrmSection /> },
-  { id: "logistics", label: "⛟ Lojistik", el: <LogisticsSection /> },
-  { id: "basket", label: "Birlikte Alınanlar", el: <BasketSection /> },
-  { id: "upload", label: "↑ Veri Yükle", el: <UploadSection /> },
+  { id: "orders", label: "Siparişler" },
+  { id: "stats", label: "İstatistikler" },
+  { id: "customers", label: "Müşteriler" },
+  { id: "crm", label: "★ CRM / Kampanya" },
+  { id: "logistics", label: "⛟ Lojistik" },
+  { id: "basket", label: "Birlikte Alınanlar" },
+  { id: "upload", label: "↑ Veri Yükle" },
 ];
 
 export default function App() {
   const [active, setActive] = useState("orders");
-  const current = TABS.find((t) => t.id === active);
+  const [focusCustomer, setFocusCustomer] = useState(null);
+
+  const goToCrm = (customerId) => {
+    setFocusCustomer(customerId);
+    setActive("crm");
+  };
+
+  const renderTab = () => {
+    switch (active) {
+      case "orders": return <OrdersSection onGoCrm={goToCrm} />;
+      case "stats": return <StatsSection />;
+      case "customers": return <CustomersSection />;
+      case "crm": return <CrmSection focusCustomer={focusCustomer} onFocusHandled={() => setFocusCustomer(null)} />;
+      case "logistics": return <LogisticsSection />;
+      case "basket": return <BasketSection />;
+      case "upload": return <UploadSection />;
+      default: return null;
+    }
+  };
 
   return (
     <>
@@ -48,7 +66,7 @@ export default function App() {
           ))}
         </nav>
       </header>
-      <main className="container">{current?.el}</main>
+      <main className="container">{renderTab()}</main>
     </>
   );
 }

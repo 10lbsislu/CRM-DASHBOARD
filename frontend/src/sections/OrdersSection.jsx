@@ -45,7 +45,7 @@ function Trend() {
   );
 }
 
-function OrderModal({ orderNumber, onClose }) {
+function OrderModal({ orderNumber, onClose, onGoCrm }) {
   const { data, error, loading } = useApi(`/api/orders/${orderNumber}`);
   return (
     <Modal title={`Sipariş #${orderNumber}`} onClose={onClose}>
@@ -59,6 +59,15 @@ function OrderModal({ orderNumber, onClose }) {
               <b>{data.status || "-"}</b> · Ödeme: {data.payment_status || "-"}
               {data.payment_method ? ` (${data.payment_method})` : ""}
             </div>
+            {data.customer_id && onGoCrm && (
+              <button
+                className="btn"
+                style={{ background: "var(--card-bg)", color: "var(--accent)", border: "1px solid var(--accent)", marginBottom: 14 }}
+                onClick={() => onGoCrm(data.customer_id)}
+              >
+                ★ Bu müşterinin CRM kaydına git
+              </button>
+            )}
             <table>
               <thead>
                 <tr>
@@ -103,7 +112,7 @@ function OrderModal({ orderNumber, onClose }) {
   );
 }
 
-function AllOrders() {
+function AllOrders({ onGoCrm }) {
   const { data, error, loading } = useApi("/api/orders/list");
   const [q, setQ] = useState("");
   const [sel, setSel] = useState(null);
@@ -183,12 +192,12 @@ function AllOrders() {
           </table>
         </div>
       </AsyncState>
-      {sel && <OrderModal orderNumber={sel} onClose={() => setSel(null)} />}
+      {sel && <OrderModal orderNumber={sel} onClose={() => setSel(null)} onGoCrm={onGoCrm} />}
     </Card>
   );
 }
 
-export default function OrdersSection() {
+export default function OrdersSection({ onGoCrm }) {
   return (
     <section className="section">
       <h2 className="section-title">
@@ -196,7 +205,7 @@ export default function OrdersSection() {
       </h2>
       <Trend />
       <div style={{ marginTop: 16 }}>
-        <AllOrders />
+        <AllOrders onGoCrm={onGoCrm} />
       </div>
     </section>
   );
