@@ -56,6 +56,12 @@ def upsert(data: NormalizedData, db: Session) -> dict:
     # Tüm veri üzerinde kimlik çözümleme (yeni müşteri eski biriyle birleşebilir)
     total_customers = reresolve_db(db)
 
+    # Yeni eklenen siparişlerin detayı (kaçıncı sipariş + kampanya/indirim)
+    from app.services import orders_service
+    new_details = [
+        r for r in orders_service.list_orders(db) if r["order_number"] in new_orders
+    ]
+
     order_total = db.query(Order).count()
     return {
         "uploaded_orders": len(incoming),
@@ -64,4 +70,5 @@ def upsert(data: NormalizedData, db: Session) -> dict:
         "new_products": new_products,
         "total_orders_in_db": order_total,
         "total_customers_in_db": total_customers,
+        "new_order_details": new_details,
     }

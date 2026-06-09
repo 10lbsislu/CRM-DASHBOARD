@@ -86,6 +86,12 @@ function OrderModal({ orderNumber, onClose }) {
               <div className="totals-row">
                 <span>Kargo</span><span>{fmtMoney2(data.shipping_price)}</span>
               </div>
+              {data.campaign_discount > 0 && (
+                <div className="totals-row" style={{ color: "#b91c1c" }}>
+                  <span>Kampanya indirimi{data.coupon_code ? ` (${data.coupon_code})` : ""}</span>
+                  <span>-{fmtMoney2(data.campaign_discount)}</span>
+                </div>
+              )}
               <div className="totals-row grand">
                 <span>Toplam</span><span>{fmtMoney2(data.total)}</span>
               </div>
@@ -136,6 +142,7 @@ function AllOrders() {
                 <th>Müşteri</th>
                 <th>Şehir</th>
                 <th className="num">Kaçıncı</th>
+                <th>İndirim</th>
                 <th>Durum</th>
                 <th className="num">Adet</th>
                 <th className="num">Tutar</th>
@@ -157,13 +164,20 @@ function AllOrders() {
                       ? `${o.purchase_index}. ${o.customer_total_orders ? `/ ${o.customer_total_orders}` : ""}`
                       : "-"}
                   </td>
+                  <td>
+                    {o.discounted
+                      ? <span className="badge" style={{ background: "#fee2e2", color: "#b91c1c" }}>
+                          {o.coupon_code || "İndirimli"}{o.campaign_discount ? ` · ${fmtMoney(o.campaign_discount)}` : ""}
+                        </span>
+                      : <span style={{ color: "var(--muted)" }}>—</span>}
+                  </td>
                   <td><span className="badge">{o.status || "-"}</span></td>
                   <td className="num">{o.item_count}</td>
                   <td className="num">{fmtMoney(o.total)}</td>
                 </tr>
               ))}
               {!filtered.length && (
-                <tr><td colSpan={8} className="state">Sonuç yok</td></tr>
+                <tr><td colSpan={9} className="state">Sonuç yok</td></tr>
               )}
             </tbody>
           </table>

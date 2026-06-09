@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { apiUpload } from "../api/client";
-import { Card } from "../components/common";
+import { Card, fmtMoney, fmtDate, orderTierColor } from "../components/common";
 
 export default function UploadSection() {
   const [files, setFiles] = useState([]);
@@ -110,6 +110,45 @@ export default function UploadSection() {
             >
               Paneli Yenile
             </button>
+          </div>
+        )}
+
+        {result && result.new_order_details?.length > 0 && (
+          <div style={{ marginTop: 16 }}>
+            <h3 style={{ fontSize: 14, margin: "0 0 8px" }}>
+              Yeni Gelen Siparişler ({result.new_order_details.length})
+            </h3>
+            <div style={{ maxHeight: 360, overflowY: "auto" }}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>No</th><th>Tarih</th><th>Müşteri</th>
+                    <th className="num">Kaçıncı</th><th>İndirim/Kampanya</th><th className="num">Tutar</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {result.new_order_details.map((o) => (
+                    <tr key={o.order_number}>
+                      <td style={{ background: orderTierColor(o.total), color: "#fff", fontWeight: 700 }}>#{o.order_number}</td>
+                      <td>{fmtDate(o.order_date)}</td>
+                      <td>{o.customer_name}</td>
+                      <td className="num">
+                        {o.purchase_index ? `${o.purchase_index}.` : "-"}
+                        {o.purchase_index === 1 ? <span className="badge" style={{ background: "#dbeafe", color: "#1d4ed8", marginLeft: 6 }}>YENİ</span> : null}
+                      </td>
+                      <td>
+                        {o.discounted
+                          ? <span className="badge" style={{ background: "#fee2e2", color: "#b91c1c" }}>
+                              {o.coupon_code || "İndirimli"}{o.campaign_discount ? ` · ${fmtMoney(o.campaign_discount)}` : ""}
+                            </span>
+                          : <span style={{ color: "var(--muted)" }}>—</span>}
+                      </td>
+                      <td className="num">{fmtMoney(o.total)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </Card>

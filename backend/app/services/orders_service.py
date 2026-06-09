@@ -82,6 +82,7 @@ def list_orders(db: Session, limit: int = 5000) -> list[dict]:
             Order.order_number, Order.order_date, Order.customer_id,
             Order.customer_email, Order.customer_name, Order.city,
             Order.status, Order.payment_status, Order.total,
+            Order.campaign_total, Order.coupon_code,
             Customer.full_name,
             func.coalesce(item_count.c.n, 0).label("item_count"),
         )
@@ -93,6 +94,7 @@ def list_orders(db: Session, limit: int = 5000) -> list[dict]:
     out = []
     for r in db.execute(q).all():
         name = r.full_name or r.customer_name or r.customer_email or "—"
+        discount = r.campaign_total or 0
         out.append({
             "order_number": r.order_number,
             "order_date": r.order_date,
@@ -105,6 +107,9 @@ def list_orders(db: Session, limit: int = 5000) -> list[dict]:
             "item_count": r.item_count,
             "purchase_index": seq.get(r.order_number),
             "customer_total_orders": totals.get(r.customer_id) if r.customer_id else None,
+            "campaign_discount": round(discount, 2) if discount else 0,
+            "coupon_code": r.coupon_code,
+            "discounted": bool(discount > 0 or r.coupon_code),
         })
     return out
 
@@ -134,6 +139,8 @@ def order_detail(db: Session, order_number: str) -> dict | None:
         "payment_method": o.payment_method,
         "subtotal": o.subtotal,
         "shipping_price": o.shipping_price,
+        "campaign_discount": round(o.campaign_total, 2) if o.campaign_total else 0,
+        "coupon_code": o.coupon_code,
         "total": o.total,
         "items": [
             {
