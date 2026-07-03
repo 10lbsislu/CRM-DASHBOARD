@@ -109,3 +109,4 @@ Müşteri arama, kupon ve kampanya takibinin panelden yönetildiği yazılabilir
 | 3 | `GET /api/customers/rfm`, `/top`, `/churn-risk?days=90`, `/loyalty`, `/new-returning?period=month`, `/daily?date=YYYY-MM-DD` |
 | 4 | `GET /api/basket/pairs?min_count=2` |
 | Yükleme | `POST /api/ingest/upload` (multipart CSV) |
+# CRM-DASHBOARD
