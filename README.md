@@ -87,12 +87,19 @@ Frontend build edilip backend tarafından tek port (8010) üzerinden servis edil
 Docker (Node build → Python serve) + ücretsiz PostgreSQL. Dosyalar hazır: `Dockerfile`, `render.yaml`, `.dockerignore`.
 
 1. Dosyaları GitHub'a push et (kod-only; müşteri verisi gitmez).
-2. **render.com → New → Blueprint** → repoyu seç → **Apply**. `render.yaml` hem web servisini hem ücretsiz Postgres'i kurar.
-3. Web servisin **Environment** sekmesinde **`APP_PASSWORD`** değerini gir (güçlü bir şifre) — panelin herkese açık olmaması için ZORUNLU. Kullanıcı adı varsayılan `admin` (`APP_USERNAME` ile değiştirilebilir).
-4. Deploy bitince `https://<ad>.onrender.com` açılır; tarayıcı **kullanıcı adı/şifre** sorar (Basic Auth).
-5. **Veri:** Postgres boş başlar → panelden **"↑ Veri Yükle"** ile CSV yükle (Postgres'e yazılır, kalıcı).
+2. **Postgres bağlantısı** — Render hesabında yalnızca **1 ücretsiz Postgres** olabilir:
+   - Zaten bir ücretsiz Postgres'in varsa onu kullan (yenisini kurma).
+   - Yoksa: **New → PostgreSQL → Free** ile bir tane oluştur.
+   - DB sayfasından **Internal Database URL**'i kopyala.
+3. **render.com → New → Blueprint** → repoyu seç → **Apply**. (`render.yaml` sadece web servisini kurar, DB oluşturmaz.)
+4. Web servisin **Environment** sekmesinde:
+   - **`DATABASE_URL`** = kopyaladığın Internal Database URL
+   - **`APP_PASSWORD`** = güçlü bir şifre (ZORUNLU — panel herkese açık olmasın). Kullanıcı adı varsayılan `admin`.
+5. Deploy bitince `https://<ad>.onrender.com` açılır; tarayıcı **kullanıcı adı/şifre** sorar (Basic Auth).
+6. **Veri:** Postgres boş başlar → panelden **"↑ Veri Yükle"** ile CSV yükle (kalıcı).
 
-> ⚙️ Kod SQLite (lokal) ve PostgreSQL (Render) ile çalışır — `DATABASE_URL` neyi gösterirse. Render Postgres URL'i otomatik bağlanır.
+> ⚙️ Uygulama tablolarını Postgres'te **`mezzemarin`** şemasına yazar — aynı ücretsiz DB'yi başka bir proje kullansa bile çakışma olmaz.
+> ⚙️ Kod SQLite (lokal) ve PostgreSQL (Render) ile çalışır — `DATABASE_URL` neyi gösterirse.
 > ⚠️ **Ücretsiz plan:** servis 15 dk hareketsizlikte uyur (ilk istek ~1 dk yavaş); Postgres free planının süre sınırı vardır.
 > ⚠️ **CRM Excel geçmişi** (import script'i) Render'da otomatik gelmez; sipariş/CRM verisi panelden/CSV ile beslenir.
 
