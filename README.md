@@ -83,6 +83,19 @@ Frontend build edilip backend tarafından tek port (8010) üzerinden servis edil
 > ⚠️ **Güvenlik:** Panelde kimlik doğrulama yok — ağdaki herkes müşteri verisini görebilir. Sadece güvenilir yerel ağda kullan.
 > ⚠️ **VPN:** Surfshark vb. açıkken yerel ağ erişimi engellenebilir; "yerel ağ paylaşımına izin ver" seçeneğini açın ya da VPN'i geçici durdurun.
 
+## Render'da Ücretsiz Dağıtım (internete açık)
+Docker (Node build → Python serve) + ücretsiz PostgreSQL. Dosyalar hazır: `Dockerfile`, `render.yaml`, `.dockerignore`.
+
+1. Dosyaları GitHub'a push et (kod-only; müşteri verisi gitmez).
+2. **render.com → New → Blueprint** → repoyu seç → **Apply**. `render.yaml` hem web servisini hem ücretsiz Postgres'i kurar.
+3. Web servisin **Environment** sekmesinde **`APP_PASSWORD`** değerini gir (güçlü bir şifre) — panelin herkese açık olmaması için ZORUNLU. Kullanıcı adı varsayılan `admin` (`APP_USERNAME` ile değiştirilebilir).
+4. Deploy bitince `https://<ad>.onrender.com` açılır; tarayıcı **kullanıcı adı/şifre** sorar (Basic Auth).
+5. **Veri:** Postgres boş başlar → panelden **"↑ Veri Yükle"** ile CSV yükle (Postgres'e yazılır, kalıcı).
+
+> ⚙️ Kod SQLite (lokal) ve PostgreSQL (Render) ile çalışır — `DATABASE_URL` neyi gösterirse. Render Postgres URL'i otomatik bağlanır.
+> ⚠️ **Ücretsiz plan:** servis 15 dk hareketsizlikte uyur (ilk istek ~1 dk yavaş); Postgres free planının süre sınırı vardır.
+> ⚠️ **CRM Excel geçmişi** (import script'i) Render'da otomatik gelmez; sipariş/CRM verisi panelden/CSV ile beslenir.
+
 ## Veri Yükleme (biriktiren / upsert)
 - **Panelden:** "↑ Veri Yükle" sekmesinden CSV sürükle-bırak.
 - **Komut satırından:**

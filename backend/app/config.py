@@ -21,6 +21,11 @@ class Settings(BaseSettings):
     # CORS — frontend adresi
     frontend_origin: str = "http://localhost:5173"
 
+    # Basit kimlik doğrulama (Basic Auth). app_password boşsa auth KAPALI (lokal).
+    # Public dağıtımda (Render) mutlaka doldurulmalı.
+    app_username: str = "admin"
+    app_password: str = ""
+
     # ikas GraphQL (ileride)
     ikas_api_url: str = ""
     ikas_client_id: str = ""

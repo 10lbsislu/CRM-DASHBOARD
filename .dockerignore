@@ -1,0 +1,17 @@
+# Bağımlılıklar / build çıktıları (imajda yeniden üretilir)
+**/node_modules
+**/.venv
+**/dist
+**/__pycache__
+**/*.pyc
+
+# Yerel veri ve gizli dosyalar (imaja girmesin)
+*.db
+*.sqlite*
+.env
+data/
+
+# Git ve editör
+.git
+.vscode
+.idea

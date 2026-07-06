@@ -1,0 +1,25 @@
+# Render Blueprint — mezzeMarin CRM (Docker + ücretsiz PostgreSQL)
+# render.com → New → Blueprint → repo'yu seç → Apply
+services:
+  - type: web
+    name: mezzemarin-crm
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    envVars:
+      # Veritabanı bağlantısı (aşağıdaki Postgres'ten otomatik gelir)
+      - key: DATABASE_URL
+        fromDatabase:
+          name: mezzemarin-crm-db
+          property: connectionString
+      # Basic Auth — panelin herkese açık olmaması için ZORUNLU.
+      - key: APP_USERNAME
+        value: admin
+      - key: APP_PASSWORD
+        sync: false          # Render kontrol panelinden elle gir (repoya yazılmaz)
+
+databases:
+  - name: mezzemarin-crm-db
+    plan: free
+    databaseName: crm

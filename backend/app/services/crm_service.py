@@ -6,6 +6,7 @@
 - Özet KPI'lar (aranacaklar, süresi biten kuponlar, kampanya dağılımı)
 - Kampanya ROI (sipariş Kampanya Toplamı'ndan)
 """
+from collections import defaultdict
 from datetime import datetime, timedelta
 
 from sqlalchemy import func, select
@@ -313,28 +314,32 @@ def discount_impact(db: Session, start: str | None = None,
 
 
 def campaign_roi(db: Session, period: str = "month") -> list[dict]:
-    """Kampanya indirimi etkisi — siparişlerdeki Kampanya Toplamı'ndan."""
+    """Kampanya indirimi etkisi — siparişlerdeki Kampanya Toplamı'ndan.
+
+    Gruplama Python tarafında (SQLite/PostgreSQL bağımsız).
+    """
     fmt = _PERIOD_FMT.get(period, _PERIOD_FMT["month"])
-    bucket = func.strftime(fmt, Order.order_date).label("bucket")
-    q = (
-        select(
-            bucket,
-            func.count().label("discounted_orders"),
-            func.coalesce(func.sum(Order.campaign_total), 0).label("total_discount"),
-            func.coalesce(func.sum(Order.total), 0).label("revenue"),
-        )
+    rows = db.execute(
+        select(Order.order_date, Order.campaign_total, Order.total)
         .where(_NET)
         .where(Order.campaign_total.isnot(None))
         .where(Order.campaign_total > 0)
         .where(Order.order_date.isnot(None))
-        .group_by(bucket).order_by(bucket)
+    ).all()
+    buckets: dict[str, dict] = defaultdict(
+        lambda: {"discounted_orders": 0, "total_discount": 0.0, "revenue": 0.0}
     )
+    for od, disc, total in rows:
+        b = buckets[od.strftime(fmt)]
+        b["discounted_orders"] += 1
+        b["total_discount"] += disc or 0
+        b["revenue"] += total or 0
     return [
         {
-            "period": r.bucket,
-            "discounted_orders": r.discounted_orders,
-            "total_discount": round(r.total_discount, 2),
-            "revenue": round(r.revenue, 2),
+            "period": k,
+            "discounted_orders": v["discounted_orders"],
+            "total_discount": round(v["total_discount"], 2),
+            "revenue": round(v["revenue"], 2),
         }
-        for r in db.execute(q).all()
+        for k, v in sorted(buckets.items())
     ]

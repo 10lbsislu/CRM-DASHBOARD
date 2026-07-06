@@ -157,21 +157,22 @@ def order_detail(db: Session, order_number: str) -> dict | None:
 
 
 def order_trend(db: Session, period: str = "day") -> list[dict]:
-    """Zaman içinde sipariş sayısı ve net ciro (iptal/iade hariç)."""
+    """Zaman içinde sipariş sayısı ve net ciro (iptal/iade hariç).
+
+    Gruplama Python tarafında yapılır (SQLite/PostgreSQL bağımsız).
+    """
     fmt = _PERIOD_FMT.get(period, _PERIOD_FMT["day"])
-    bucket = func.strftime(fmt, Order.order_date).label("bucket")
-    q = (
-        select(
-            bucket,
-            func.count().label("orders"),
-            func.coalesce(func.sum(Order.total), 0).label("revenue"),
-        )
+    rows = db.execute(
+        select(Order.order_date, Order.total)
         .where(Order.status.notin_(EXCLUDED_STATUSES))
         .where(Order.order_date.isnot(None))
-        .group_by(bucket)
-        .order_by(bucket)
-    )
+    ).all()
+    buckets: dict[str, dict] = defaultdict(lambda: {"orders": 0, "revenue": 0.0})
+    for od, total in rows:
+        b = buckets[od.strftime(fmt)]
+        b["orders"] += 1
+        b["revenue"] += total or 0
     return [
-        {"period": r.bucket, "orders": r.orders, "revenue": round(r.revenue, 2)}
-        for r in db.execute(q).all()
+        {"period": k, "orders": v["orders"], "revenue": round(v["revenue"], 2)}
+        for k, v in sorted(buckets.items())
     ]

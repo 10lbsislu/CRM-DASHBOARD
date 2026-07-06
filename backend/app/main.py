@@ -1,9 +1,12 @@
 """FastAPI uygulaması — giriş noktası."""
+import base64
+import secrets
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from starlette.responses import Response
 
 from app.config import BACKEND_DIR, settings
 from app.database import Base, engine
@@ -27,6 +30,28 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def basic_auth(request: Request, call_next):
+    """app_password tanımlıysa /health hariç tüm isteklerde Basic Auth ister."""
+    if settings.app_password and request.url.path != "/health":
+        header = request.headers.get("Authorization", "")
+        ok = False
+        if header.startswith("Basic "):
+            try:
+                user, _, pwd = base64.b64decode(header[6:]).decode("utf-8").partition(":")
+                ok = (secrets.compare_digest(user, settings.app_username)
+                      and secrets.compare_digest(pwd, settings.app_password))
+            except Exception:
+                ok = False
+        if not ok:
+            return Response(
+                "Kimlik doğrulama gerekli",
+                status_code=401,
+                headers={"WWW-Authenticate": 'Basic realm="mezzeMarin CRM"'},
+            )
+    return await call_next(request)
 
 
 @app.get("/health")

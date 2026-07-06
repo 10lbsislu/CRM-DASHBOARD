@@ -239,9 +239,14 @@ def _consistency_warning(db: Session, month: str, data: dict) -> str | None:
         free_threshold = data.get("free_threshold")
         low_fee = data.get("low_fee")
         mid_fee = data.get("mid_fee")
+    # month = "YYYY-MM" → [ay başı, sonraki ay başı) aralığı (DB-bağımsız)
+    y, m = (int(x) for x in month.split("-"))
+    start = f"{y:04d}-{m:02d}-01"
+    end = f"{(y + 1) if m == 12 else y:04d}-{(1 if m == 12 else m + 1):02d}-01"
     rows = db.execute(
         select(Order.total, Order.shipping_price)
-        .where(_NET).where(func.strftime("%Y-%m", Order.order_date) == month)
+        .where(_NET)
+        .where(Order.order_date >= start).where(Order.order_date < end)
         .where(Order.total.isnot(None))
     ).all()
     mismatch = 0
