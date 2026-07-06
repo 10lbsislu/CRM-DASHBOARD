@@ -5,9 +5,10 @@
 **/__pycache__
 **/*.pyc
 
-# Yerel veri ve gizli dosyalar (imaja girmesin)
-*.db
-*.sqlite*
+# Yerel veri ve gizli dosyalar (imaja girmesin — iç içe dahil)
+**/*.db
+**/*.sqlite*
+**/.env
 .env
 data/
 
