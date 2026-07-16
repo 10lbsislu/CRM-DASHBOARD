@@ -205,6 +205,59 @@ body {
 .cs-expiring { background: #ffedd5; color: #c2410c; }
 .cs-active { background: #dcfce7; color: #15803d; }
 
+/* Semantik rozetler */
+.badge-ok { background: #dcfce7; color: #15803d; }
+.badge-bad { background: #fee2e2; color: #b91c1c; }
+.badge-warn { background: #ffedd5; color: #c2410c; }
+.badge-neutral { background: #eef1f4; color: #64748b; }
+
+/* Satır içi düzenleme select'i — sade, hover/focus'ta belirginleşir */
+.inline-sel {
+  padding: 3px 6px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 12px;
+  max-width: 150px;
+  background: transparent;
+  cursor: pointer;
+}
+.inline-sel:hover { border-color: var(--border); background: var(--card-bg); }
+.inline-sel:focus { outline: none; border-color: var(--accent); background: var(--card-bg); }
+
+/* Kaydedildi yeşil flash */
+@keyframes savedFlash {
+  0% { background: #bbf7d0; }
+  100% { background: transparent; }
+}
+.saved-flash { animation: savedFlash 0.9s ease-out; }
+
+/* Alt-sağ toast bildirimi */
+.toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 60;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+.toast.ok { background: #16a34a; color: #fff; }
+.toast.err { background: #dc2626; color: #fff; }
+
+/* CRM filtre hızlı chip */
+.chip {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 12.5px;
+  cursor: pointer;
+  background: var(--card-bg);
+  white-space: nowrap;
+}
+.chip.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+
 /* KPI uyarı kartları (tıklanabilir) */
 .kpi-alert {
   cursor: pointer;

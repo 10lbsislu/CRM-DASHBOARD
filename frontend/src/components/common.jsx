@@ -1,4 +1,38 @@
 // Ortak küçük bileşenler ve biçimlendirme yardımcıları.
+import { useState, useEffect } from "react";
+
+// Bir değeri geciktirir (arama input'unda her tuşta istek atmamak için)
+export function useDebouncedValue(value, delay = 300) {
+  const [v, setV] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setV(value), delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
+  return v;
+}
+
+// Kupon bitişine kaç gün kaldı (negatif = geçmiş)
+export const daysLeft = (d) =>
+  d ? Math.ceil((new Date(d) - new Date()) / 86400000) : null;
+
+// CRM satırı için öncelik/uyarı sol-kenar rengi
+export function priorityColor(row) {
+  if (row.coupon_status === "expired") return "#dc2626";     // kupon süresi doldu
+  if (row.to_call && !row.called) return "#f59e0b";          // aranacak, aranmamış
+  if (row.recency_days != null && row.recency_days > 90) return "#eab308"; // uzun süredir sessiz
+  return "transparent";
+}
+
+// Kupon durum rozeti
+export function couponBadge(row) {
+  const map = {
+    expired: ["cs-expired", "Süresi doldu"],
+    expiring: ["cs-expiring", "Bitiyor"],
+    active: ["cs-active", "Aktif"],
+  };
+  const e = map[row.coupon_status];
+  return e ? { cls: e[0], label: e[1] } : null;
+}
 
 export function Card({ title, children, className = "" }) {
   return (

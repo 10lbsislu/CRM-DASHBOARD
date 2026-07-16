@@ -229,12 +229,18 @@ def summary(db: Session) -> dict:
     for r in rows:
         for e in r["eligibility"]:
             elig[e] = elig.get(e, 0) + 1
+    # Eksik kupon: uygun ama kuponu/araması olmayanlar
+    gap_count = sum(
+        1 for r in rows
+        if r["eligibility"] and not (r["coupon_sent"] or r["coupon_code"] or r["called"])
+    )
     return {
         "total_customers": len(rows),
         "to_call": to_call,
         "called": called,
         "coupon_expired": expired,
         "coupon_expiring": expiring,
+        "gap_count": gap_count,
         "campaign_distribution": [{"campaign": k, "count": v} for k, v in
                                   sorted(camp.items(), key=lambda x: -x[1])],
         "eligibility": [{"campaign": k, "count": v} for k, v in
