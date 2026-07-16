@@ -48,8 +48,10 @@ def main():
             cur.execute("SET search_path TO mezzemarin, public")
         dbapi_conn.autocommit = ac
 
+    # Şemayı tazele (yeni kolonlar da gelsin) — sadece uygulamanın kendi tabloları
+    Base.metadata.drop_all(tgt)
     Base.metadata.create_all(tgt)
-    print("\n=== Kopyalanıyor → PostgreSQL (mezzemarin şeması) ===")
+    print("\n=== Kopyalanıyor → PostgreSQL (mezzemarin şeması, şema yenilendi) ===")
     with src_engine.connect() as s, tgt.begin() as t:
         for table in reversed(Base.metadata.sorted_tables):
             t.execute(delete(table))

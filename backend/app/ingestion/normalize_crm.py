@@ -25,7 +25,7 @@ from app.services.crm_service import _WELCOME_START, _eligibility, _order_stats
 def _code_for(campaign: str | None) -> str | None:
     if campaign == "Sadakat":
         return "sepette %10"
-    if campaign in ("Nerdesin", "25.000TL ve Üstüne %5"):
+    if campaign == "25.000TL ve Üstüne %5":
         return "sepette %5"
     if campaign == "Hoşgeldin":
         return "otomatik sepette"
@@ -43,7 +43,7 @@ def _derive_campaign(code: str | None, st: dict, elig: list[str]) -> str | None:
     # Uygunluktan geri dönüş
     if "Sadakat" in elig:
         return "Sadakat"
-    if "Nerdesin" in elig:
+    if "25K+%5" in elig:
         return "25.000TL ve Üstüne %5"
     if "Hoşgeldin" in elig:
         return "Hoşgeldin"
@@ -78,8 +78,8 @@ def main():
             # B) Hoşgeldin ama kampanya öncesi
             elif c.campaign_type == "Hoşgeldin" and st.get("first_order") and st["first_order"] < _WELCOME_START:
                 _clear_campaign(c); log["B"] += 1
-            # C) Nerdesin/25K ama aktif
-            elif c.campaign_type in ("Nerdesin", "25.000TL ve Üstüne %5") and \
+            # C) 25K+%5 ama aktif
+            elif c.campaign_type == "25.000TL ve Üstüne %5" and \
                     st["recency_days"] is not None and st["recency_days"] < 90:
                 keep = bool(c.coupon_sent_date and last_order and last_order > c.coupon_sent_date)
                 if keep:

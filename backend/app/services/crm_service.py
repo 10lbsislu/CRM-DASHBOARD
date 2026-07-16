@@ -22,7 +22,7 @@ _WELCOME_START = datetime.strptime(WELCOME_CAMPAIGN_START, "%Y-%m-%d")
 
 # Otomatik kampanya uygunluk eşikleri
 LOYALTY_MIN_ORDERS = 5          # Sadakat (%10)
-WINBACK_DAYS = DEFAULT_CHURN_DAYS  # Nerdesin / 25K+%5 (90+ gün inaktif)
+WINBACK_DAYS = DEFAULT_CHURN_DAYS  # 25K+%5 (90+ gün inaktif)
 WELCOME_MAX_DAYS = 30          # Hoşgeldin (yeni müşteri)
 COUPON_SOON_DAYS = 14         # "yakında bitiyor" eşiği
 
@@ -64,7 +64,7 @@ def _eligibility(st: dict) -> list[str]:
     """Sipariş geçmişine göre müşterinin uygun olduğu kampanyalar.
 
     - Sadakat: 5+ sipariş
-    - Nerdesin / 25K+%5: yalnızca 90+ gündür alışveriş yapmayanlar
+    - 25K+%5: yalnızca 90+ gündür alışveriş yapmayanlar
     - Hoşgeldin: yalnızca kampanya başlangıcından SONRA ilk siparişini verenler
     """
     elig = []
@@ -74,7 +74,6 @@ def _eligibility(st: dict) -> list[str]:
     if orders >= LOYALTY_MIN_ORDERS:
         elig.append("Sadakat")
     if rec is not None and rec >= WINBACK_DAYS:
-        elig.append("Nerdesin")
         elig.append("25K+%5")
     if first is not None and first >= _WELCOME_START:
         elig.append("Hoşgeldin")
@@ -96,17 +95,19 @@ def _crm_dict(crm: CustomerCRM | None) -> dict:
     if crm is None:
         return {
             "status": None, "campaign_type": None, "to_call": False,
-            "called": False, "last_call_date": None, "coupon_sent": False,
-            "coupon_code": None, "coupon_sent_date": None,
-            "coupon_expiry_date": None, "note": None, "updated_at": None,
+            "called": False, "last_call_date": None, "call_outcome": None,
+            "coupon_sent": False, "coupon_code": None, "coupon_sent_date": None,
+            "coupon_expiry_date": None, "coupon_used": None, "note": None,
+            "updated_at": None,
         }
     return {
         "status": crm.status, "campaign_type": crm.campaign_type,
         "to_call": crm.to_call, "called": crm.called,
-        "last_call_date": crm.last_call_date, "coupon_sent": crm.coupon_sent,
-        "coupon_code": crm.coupon_code, "coupon_sent_date": crm.coupon_sent_date,
-        "coupon_expiry_date": crm.coupon_expiry_date, "note": crm.note,
-        "updated_at": crm.updated_at,
+        "last_call_date": crm.last_call_date, "call_outcome": crm.call_outcome,
+        "coupon_sent": crm.coupon_sent, "coupon_code": crm.coupon_code,
+        "coupon_sent_date": crm.coupon_sent_date,
+        "coupon_expiry_date": crm.coupon_expiry_date, "coupon_used": crm.coupon_used,
+        "note": crm.note, "updated_at": crm.updated_at,
     }
 
 
@@ -127,6 +128,11 @@ def list_customers(
         crm = crm_map.get(c.id)
         cd = _crm_dict(crm)
         cstatus = _coupon_status(cd["coupon_expiry_date"], now)
+        # Arama sonrası tekrar sipariş verdi mi (son sipariş > son arama)
+        reordered = bool(
+            cd["last_call_date"] and st["last_order"]
+            and st["last_order"] > cd["last_call_date"]
+        )
         rows.append({
             "customer_id": c.id,
             "name": c.full_name or c.id,
@@ -139,6 +145,7 @@ def list_customers(
             "recency_days": st["recency_days"],
             "eligibility": _eligibility(st),
             "coupon_status": cstatus,
+            "reordered_after_call": reordered,
             **cd,
         })
 
@@ -165,7 +172,8 @@ def list_customers(
 
 _DATE_FIELDS = {"last_call_date", "coupon_sent_date", "coupon_expiry_date"}
 _BOOL_FIELDS = {"to_call", "called", "coupon_sent"}
-_STR_FIELDS = {"status", "campaign_type", "coupon_code", "note"}
+_STR_FIELDS = {"status", "campaign_type", "coupon_code", "note",
+               "call_outcome", "coupon_used"}
 
 
 def update_customer(db: Session, customer_id: str, fields: dict) -> dict:
@@ -238,7 +246,7 @@ def coupon_gaps(db: Session, campaign: str | None = None) -> dict:
     """Tutarsızlık raporu: bir kampanyaya UYGUN olduğu hâlde kuponu olmayan müşteriler.
 
     Akış kuralı: ilk siparişini veren müşteriye Hoşgeldin kuponu, 5+ siparişe
-    Sadakat, 90+ gün inaktife Nerdesin kuponu tanımlanmalı. Burada bu kupon
+    Sadakat, 90+ gün inaktife 25.000TL+%5 kuponu tanımlanmalı. Burada bu kupon
     tanımlanmamış (gönderilmemiş ve kodu olmayan) uygun müşteriler listelenir.
     """
     def has_coupon(r):
@@ -271,6 +279,62 @@ def coupon_gaps(db: Session, campaign: str | None = None) -> dict:
                         for k, v in sorted(by_campaign.items(), key=lambda x: -x[1])],
         "customers": customers,
     }
+
+
+def _date_conds(start: str | None, end: str | None) -> list:
+    conds = []
+    if start:
+        conds.append(Order.order_date >= start)
+    if end:
+        conds.append(Order.order_date < end)
+    return conds
+
+
+def previous_month_called(db: Session) -> dict:
+    """Bir önceki takvim ayında aranan müşteriler (çağrı sonucu + tekrar sipariş)."""
+    now = datetime.now()
+    pm = now.month - 1 or 12
+    py = now.year if now.month > 1 else now.year - 1
+    start = datetime(py, pm, 1)
+    end = datetime(now.year, now.month, 1)
+    rows = [
+        r for r in list_customers(db)
+        if r["last_call_date"] and start <= r["last_call_date"] < end
+    ]
+    rows.sort(key=lambda r: r["last_call_date"], reverse=True)
+    return {"period": f"{py:04d}-{pm:02d}", "count": len(rows), "customers": rows}
+
+
+def valuable_customers(db: Session, start: str | None = None,
+                       end: str | None = None, limit: int = 20) -> list[dict]:
+    """En değerli müşteriler — seçili dönemdeki harcamaya göre, CRM bilgisiyle."""
+    dc = _date_conds(start, end)
+    q = (
+        select(
+            Order.customer_id, Customer.full_name,
+            func.coalesce(func.sum(Order.total), 0).label("revenue"),
+            func.count().label("orders"),
+        )
+        .outerjoin(Customer, Order.customer_id == Customer.id)
+        .where(_NET, *dc).where(Order.customer_id.isnot(None))
+        .group_by(Order.customer_id)
+        .order_by(func.sum(Order.total).desc())
+        .limit(limit)
+    )
+    crm_map = {c.customer_id: c for c in db.execute(select(CustomerCRM)).scalars()}
+    out = []
+    for r in db.execute(q).all():
+        crm = crm_map.get(r.customer_id)
+        out.append({
+            "customer_id": r.customer_id,
+            "name": r.full_name or r.customer_id,
+            "revenue": round(float(r.revenue), 2),
+            "orders": r.orders,
+            "campaign_type": crm.campaign_type if crm else None,
+            "called": bool(crm and crm.called),
+            "status": crm.status if crm else None,
+        })
+    return out
 
 
 def discount_impact(db: Session, start: str | None = None,

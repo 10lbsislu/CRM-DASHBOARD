@@ -16,10 +16,12 @@ class CRMUpdate(BaseModel):
     to_call: bool | None = None
     called: bool | None = None
     last_call_date: str | None = None
+    call_outcome: str | None = None
     coupon_sent: bool | None = None
     coupon_code: str | None = None
     coupon_sent_date: str | None = None
     coupon_expiry_date: str | None = None
+    coupon_used: str | None = None
     note: str | None = None
 
 
@@ -62,6 +64,21 @@ def discount_impact(
     db: Session = Depends(get_db),
 ):
     return crm_service.discount_impact(db, start=start, end=end)
+
+
+@router.get("/previous-month-called")
+def previous_month_called(db: Session = Depends(get_db)):
+    return crm_service.previous_month_called(db)
+
+
+@router.get("/valuable")
+def valuable(
+    start: str | None = Query(None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    end: str | None = Query(None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    limit: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db),
+):
+    return crm_service.valuable_customers(db, start=start, end=end, limit=limit)
 
 
 @router.get("/campaign-roi")

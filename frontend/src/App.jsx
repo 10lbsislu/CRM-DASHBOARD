@@ -4,6 +4,7 @@ import StatsSection from "./sections/StatsSection";
 import CustomersSection from "./sections/CustomersSection";
 import BasketSection from "./sections/BasketSection";
 import CrmSection from "./sections/CrmSection";
+import KampanyaSection from "./sections/KampanyaSection";
 import LogisticsSection from "./sections/LogisticsSection";
 import UploadSection from "./sections/UploadSection";
 
@@ -11,7 +12,8 @@ const TABS = [
   { id: "orders", label: "Siparişler" },
   { id: "stats", label: "İstatistikler" },
   { id: "customers", label: "Müşteriler" },
-  { id: "crm", label: "★ CRM / Kampanya" },
+  { id: "crm", label: "★ CRM" },
+  { id: "kampanya", label: "◆ Kampanya" },
   { id: "logistics", label: "⛟ Lojistik" },
   { id: "basket", label: "Birlikte Alınanlar" },
   { id: "upload", label: "↑ Veri Yükle" },
@@ -32,6 +34,7 @@ export default function App() {
       case "stats": return <StatsSection />;
       case "customers": return <CustomersSection />;
       case "crm": return <CrmSection focusCustomer={focusCustomer} onFocusHandled={() => setFocusCustomer(null)} />;
+      case "kampanya": return <KampanyaSection />;
       case "logistics": return <LogisticsSection />;
       case "basket": return <BasketSection />;
       case "upload": return <UploadSection />;

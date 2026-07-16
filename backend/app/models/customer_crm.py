@@ -24,11 +24,13 @@ class CustomerCRM(Base):
     to_call: Mapped[bool] = mapped_column(Boolean, default=False)        # aranacak mı?
     called: Mapped[bool] = mapped_column(Boolean, default=False)         # arandı mı?
     last_call_date: Mapped[datetime | None] = mapped_column(DateTime)
+    call_outcome: Mapped[str | None] = mapped_column(String)             # çağrı sonucu (cevap)
 
     coupon_sent: Mapped[bool] = mapped_column(Boolean, default=False)
     coupon_code: Mapped[str | None] = mapped_column(String)
     coupon_sent_date: Mapped[datetime | None] = mapped_column(DateTime)
     coupon_expiry_date: Mapped[datetime | None] = mapped_column(DateTime)
+    coupon_used: Mapped[str | None] = mapped_column(String)              # kupon kullanıldı mı
 
     note: Mapped[str | None] = mapped_column(String)
     updated_at: Mapped[datetime | None] = mapped_column(DateTime)
